@@ -15,3 +15,25 @@
  */
 
 package api
+
+import (
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+)
+
+// DriverConfigs retrieves the driver specific configuration
+func DriverConfigs() map[string]string {
+	return service.RunningService().DriverConfigs()
+}
+
+// DeviceCommand retrieves the specific DeviceCommand instance from cache according to
+// the Device name and Command name
+func DeviceCommand(deviceName string, commandName string) (models.DeviceCommand, bool) {
+	return service.RunningService().DeviceCommand(deviceName, commandName)
+}
+
+// DeviceResource retrieves the specific DeviceResource instance from cache according to
+// the Device name and Device Resource name
+func DeviceResource(deviceName string, deviceResource string) (models.DeviceResource, bool) {
+	return service.RunningService().DeviceResource(deviceName, deviceResource)
+}
