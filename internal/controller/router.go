@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package startup
+package controller
 
 import (
-	"github.com/volcengine/vei-driver-sdk-go/internal/runtime"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
 )
 
-func Bootstrap(name string, version string, driver interface{}) {
-	runtime.InitDriver(name, version, driver)
-}
+func RegisterRoutes(service interfaces.DeviceServiceSDK) {}

@@ -14,4 +14,12 @@
  * limitations under the License.
  */
 
-package api
+package vei
+
+import (
+	"github.com/volcengine/vei-driver-sdk-go/internal/runtime"
+)
+
+func Bootstrap(name string, version string, driver interface{}, opts ...runtime.Option) {
+	runtime.Startup(name, version, driver, opts...)
+}
