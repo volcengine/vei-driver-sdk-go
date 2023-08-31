@@ -62,7 +62,9 @@ func (a *Agent) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.As
 		}
 	}
 
-	controller.RegisterRoutes(a.service)
+	if err := controller.RegisterRoutes(a.service); err != nil {
+		return err
+	}
 
 	return a.driver.Initialize(lc, asyncCh, deviceCh)
 }

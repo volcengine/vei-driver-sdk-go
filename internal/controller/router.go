@@ -17,7 +17,35 @@
 package controller
 
 import (
+	"net/http"
+
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+
+	"github.com/volcengine/vei-driver-sdk-go/internal/controller/debug"
+	"github.com/volcengine/vei-driver-sdk-go/internal/controller/discovery"
 )
 
-func RegisterRoutes(service interfaces.DeviceServiceSDK) {}
+const (
+	ApiDebugRoute         = common.ApiBase + "/debug"
+	ApiAutoDiscoveryRoute = common.ApiBase + "/autodiscovery"
+)
+
+type Route struct {
+	route   string
+	handler func(http.ResponseWriter, *http.Request)
+	method  []string
+}
+
+func RegisterRoutes(service interfaces.DeviceServiceSDK) error {
+	routes := []Route{
+		{route: ApiDebugRoute, handler: debug.Debug, method: []string{http.MethodPost}},
+		{route: ApiAutoDiscoveryRoute, handler: discovery.Discover, method: []string{http.MethodGet}},
+	}
+	for _, route := range routes {
+		if err := service.AddRoute(route.route, route.handler, route.method...); err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -42,7 +42,7 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 	if driver, ok := proto.(interfaces.Driver); ok {
 		agent.driver = driver
 	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "Please implement the driver interface")
+		_, _ = fmt.Fprintf(os.Stderr, "Please implement the driver interface ")
 		os.Exit(1)
 	}
 
