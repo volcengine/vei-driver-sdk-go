@@ -4,6 +4,8 @@ package mocks
 
 import (
 	logger "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	interfaces "github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
+
 	mock "github.com/stretchr/testify/mock"
 
 	models "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
@@ -76,13 +78,13 @@ func (_m *Driver) HandleWriteCommands(deviceName string, protocols map[string]mo
 	return r0
 }
 
-// Initialize provides a mock function with given fields: lc, asyncCh, deviceCh
-func (_m *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *pkgmodels.AsyncValues, deviceCh chan<- []pkgmodels.DiscoveredDevice) error {
-	ret := _m.Called(lc, asyncCh, deviceCh)
+// Initialize provides a mock function with given fields: lc, asyncCh, deviceCh, eventCallback
+func (_m *Driver) Initialize(lc logger.LoggingClient, asyncCh chan<- *pkgmodels.AsyncValues, deviceCh chan<- []pkgmodels.DiscoveredDevice, eventCallback interfaces.EventCallback) error {
+	ret := _m.Called(lc, asyncCh, deviceCh, eventCallback)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(logger.LoggingClient, chan<- *pkgmodels.AsyncValues, chan<- []pkgmodels.DiscoveredDevice) error); ok {
-		r0 = rf(lc, asyncCh, deviceCh)
+	if rf, ok := ret.Get(0).(func(logger.LoggingClient, chan<- *pkgmodels.AsyncValues, chan<- []pkgmodels.DiscoveredDevice, interfaces.EventCallback) error); ok {
+		r0 = rf(lc, asyncCh, deviceCh, eventCallback)
 	} else {
 		r0 = ret.Error(0)
 	}

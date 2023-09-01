@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package controller
+package runtime
 
 import (
 	"net/http"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/controller/debug"
@@ -37,13 +36,13 @@ type Route struct {
 	method  []string
 }
 
-func RegisterRoutes(service interfaces.DeviceServiceSDK) error {
+func RegisterRoutes() error {
 	routes := []Route{
-		{route: ApiDebugRoute, handler: debug.Debug, method: []string{http.MethodPost}},
-		{route: ApiAutoDiscoveryRoute, handler: discovery.Discover, method: []string{http.MethodGet}},
+		{route: ApiDebugRoute, handler: debug.Debug(agent.debugger), method: []string{http.MethodPost}},
+		{route: ApiAutoDiscoveryRoute, handler: discovery.Discover(agent.discovery), method: []string{http.MethodGet}},
 	}
 	for _, route := range routes {
-		if err := service.AddRoute(route.route, route.handler, route.method...); err != nil {
+		if err := agent.service.AddRoute(route.route, route.handler, route.method...); err != nil {
 			return err
 		}
 	}

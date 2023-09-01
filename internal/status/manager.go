@@ -36,10 +36,14 @@ type Manager struct {
 	ds       interfaces.DeviceServiceSDK
 }
 
-func Default(ds interfaces.DeviceServiceSDK) *Manager {
+func Default(ds interfaces.DeviceServiceSDK) (OfflineDecision, *Manager) {
 	consecutiveErrorNum := utils.GetIntEnv("ERROR_NUM_THRESHOLD", 10)
-	manager, _ := NewManager(NewOfflineDecision(ExceedConsecutiveErrorNum, consecutiveErrorNum), ds)
-	return manager
+	if consecutiveErrorNum <= 0 {
+		consecutiveErrorNum = 10
+	}
+	decision := NewOfflineDecision(ExceedConsecutiveErrorNum, consecutiveErrorNum)
+	manager, _ := NewManager(decision, ds)
+	return decision, manager
 }
 
 func NewManager(decision OfflineDecision, ds interfaces.DeviceServiceSDK) (*Manager, error) {

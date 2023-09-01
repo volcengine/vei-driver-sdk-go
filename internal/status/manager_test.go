@@ -31,7 +31,7 @@ func TestDefaultManager(t *testing.T) {
 	mockDeviceService := &mocks.DeviceServiceSDK{}
 	mockDeviceService.On("GetLoggingClient").Return(logger.NewMockClient())
 
-	manager := Default(mockDeviceService)
+	_, manager := Default(mockDeviceService)
 	require.NotNil(t, manager)
 	require.Equal(t, ExceedConsecutiveErrorNum, manager.decision.policy)
 	require.Equal(t, int64(10), manager.decision.threshold)

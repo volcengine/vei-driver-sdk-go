@@ -29,6 +29,7 @@ import (
 var agent *Agent
 var _ sdkmodels.ProtocolDriver = (*Agent)(nil)
 var _ sdkmodels.ProtocolDiscovery = (*Agent)(nil)
+var _ interfaces.EventCallback = (*Agent)(nil)
 
 type Option func(agent *Agent)
 
@@ -48,14 +49,12 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 
 	if handler, ok := proto.(interfaces.DeviceHandler); ok {
 		agent.handler = handler
-	} else {
-		agent.handler = nil
 	}
-
 	if discovery, ok := proto.(interfaces.Discovery); ok {
 		agent.discovery = discovery
-	} else {
-		agent.discovery = nil
+	}
+	if debugger, ok := proto.(interfaces.Debugger); ok {
+		agent.debugger = debugger
 	}
 
 	startup.Bootstrap(agent.name, agent.version, agent)

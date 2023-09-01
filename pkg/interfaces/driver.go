@@ -28,7 +28,7 @@ type Driver interface {
 	// The given *AsyncValues channel can be used to push asynchronous events and
 	// readings to Core Data. The given []DiscoveredDevice channel is used to send
 	// discovered devices that will be filtered and added to Core Metadata asynchronously.
-	Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, deviceCh chan<- []sdkmodels.DiscoveredDevice) error
+	Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, deviceCh chan<- []sdkmodels.DiscoveredDevice, eventCallback EventCallback) error
 	// HandleReadCommands passes a slice of CommandRequest struct each representing
 	// a ResourceOperation for a specific device resource.
 	HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkmodels.CommandRequest) ([]*sdkmodels.CommandValue, error)
@@ -56,8 +56,13 @@ type DeviceHandler interface {
 	RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
 }
 
-// Discovery is an optional interface implemented by driver that support dynamic device discovery.
+// TODO: Discovery is an optional interface implemented by driver that support dynamic device discovery.
 type Discovery interface {
 	// Discover triggers protocol specific device discovery.
 	Discover() []sdkmodels.DiscoveredDevice
+}
+
+// TODO: Debugger is an optional interface implemented by driver that support debugging for device profile.
+type Debugger interface {
+	Debug()
 }

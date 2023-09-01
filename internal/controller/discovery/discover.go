@@ -18,9 +18,13 @@ package discovery
 
 import (
 	"net/http"
+
+	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
-func Discover(writer http.ResponseWriter, request *http.Request) {
-	writer.WriteHeader(http.StatusNotImplemented)
-	writer.Write([]byte("Not Implemented"))
+func Discover(discovery interfaces.Discovery) func(writer http.ResponseWriter, request *http.Request) {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		writer.WriteHeader(http.StatusNotImplemented)
+		_, _ = writer.Write([]byte("Not Implemented"))
+	}
 }

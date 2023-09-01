@@ -17,8 +17,61 @@
 package runtime
 
 import (
+	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+
+	"github.com/volcengine/vei-driver-sdk-go/pkg/resource"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
+
+func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties,
+	reqs []sdkmodels.CommandRequest) ([]*sdkmodels.CommandValue, error) {
+
+	responses := make([]*sdkmodels.CommandValue, 0)
+	properties, services, _ := GroupByCategory(reqs)
+
+	if len(properties) > 0 {
+		result, err := a.driver.HandleReadCommands(deviceName, protocols, properties)
+		if err != nil {
+			a.StatusManager.OnHandleCommandsFailed(deviceName)
+			return nil, err
+		}
+		responses = append(responses, result...)
+	}
+
+	for _, srv := range services {
+		data, edgexErr := utils.ParametersFromURLRawQuery(srv)
+		if edgexErr != nil {
+			return nil, edgexErr
+		}
+		result, err := a.driver.HandleServiceCall(deviceName, protocols, srv, data)
+		if err != nil {
+			a.StatusManager.OnHandleCommandsFailed(deviceName)
+			return nil, err
+		}
+		responses = append(responses, result)
+	}
+
+	if len(responses) == 0 {
+		a.StatusManager.OnHandleCommandsFailed(deviceName)
+		return nil, errors.NewCommonEdgeX(errors.KindServerError, "empty responses", nil)
+	}
+
+	a.StatusManager.OnHandleCommandsSuccessfully(deviceName)
+	return responses, nil
+}
+
+func (a *Agent) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties,
+	reqs []sdkmodels.CommandRequest, params []*sdkmodels.CommandValue) error {
+	err := a.driver.HandleWriteCommands(deviceName, protocols, reqs, params)
+	if err != nil {
+		a.StatusManager.OnHandleCommandsFailed(deviceName)
+	} else {
+		a.StatusManager.OnHandleCommandsSuccessfully(deviceName)
+	}
+	return err
+}
 
 func (a *Agent) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
 	a.log.Infof("[AddDevice]: device '%s' is added", deviceName)
@@ -44,4 +97,18 @@ func (a *Agent) RemoveDevice(deviceName string, protocols map[string]models.Prot
 		return nil
 	}
 	return a.handler.RemoveDevice(deviceName, protocols)
+}
+
+func GroupByCategory(reqs []sdkmodels.CommandRequest) (properties, services, events []sdkmodels.CommandRequest) {
+	for _, req := range reqs {
+		switch resource.GetCategory(req) {
+		case resource.Property:
+			properties = append(properties, req)
+		case resource.Service:
+			services = append(services, req)
+		case resource.Event:
+			events = append(events, req)
+		}
+	}
+	return properties, services, events
 }

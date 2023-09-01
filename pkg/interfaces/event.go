@@ -14,17 +14,13 @@
  * limitations under the License.
  */
 
-package debug
+package interfaces
 
 import (
-	"net/http"
-
-	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-func Debug(debugger interfaces.Debugger) func(writer http.ResponseWriter, request *http.Request) {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		writer.WriteHeader(http.StatusNotImplemented)
-		_, _ = writer.Write([]byte("Not Implemented"))
-	}
+type EventCallback interface {
+	ReportEvent(deviceName string, value *models.CommandValue) error
+	ReportEvents(deviceName string, values []*models.CommandValue) error
 }
