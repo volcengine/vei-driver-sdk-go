@@ -37,7 +37,7 @@ type MinimalDriver struct {
 
 var _ interfaces.Driver = (*MinimalDriver)(nil)
 
-func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, deviceCh chan<- []sdkmodels.DiscoveredDevice) error {
+func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, deviceCh chan<- []sdkmodels.DiscoveredDevice, eventCallback interfaces.EventCallback) error {
 	m.lc = lc
 	m.asyncCh = asyncCh
 	return nil
