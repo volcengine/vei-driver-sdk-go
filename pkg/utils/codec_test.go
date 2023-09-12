@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 type TestObject struct {
@@ -81,6 +82,29 @@ func TestObjectToQueryParam(t *testing.T) {
 			}
 			if err == nil {
 				t.Log(got)
+			}
+		})
+	}
+}
+
+func TestExtractPassage(t *testing.T) {
+	type args struct {
+		protocols map[string]models.ProtocolProperties
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{name: "key not found", args: args{protocols: nil}, wantErr: true},
+		{name: "found", args: args{protocols: map[string]models.ProtocolProperties{Passage: nil}}, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := PassageFromProtocols(tt.args.protocols)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ExtractPassage() error = %v, wantErr %v", err, tt.wantErr)
+				return
 			}
 		})
 	}
