@@ -28,18 +28,18 @@ import (
 )
 
 func TestDefaultLogger(t *testing.T) {
-	SetLevel(logrus.TraceLevel)
+	D.SetLevel(logrus.TraceLevel)
 	msg := "this is %d test message on level %s"
-	Tracef(msg, 1, "trace")
-	Debugf(msg, 1, "debug")
-	Infof(msg, 1, "info")
-	Warnf(msg, 1, "warn")
-	Errorf(msg, 1, "error")
-	Trace(1, 2, 3, 4)
-	Debug(1, 2, 3, 4)
-	Info(1, 2, 3, 4)
-	Warn(1, 2, 3, 4)
-	Error(1, 2, 3, 4)
+	D.Tracef(msg, 1, "trace")
+	D.Debugf(msg, 1, "debug")
+	D.Infof(msg, 1, "info")
+	D.Warnf(msg, 1, "warn")
+	D.Errorf(msg, 1, "error")
+	D.Trace(1, 2, 3, 4)
+	D.Debug(1, 2, 3, 4)
+	D.Info(1, 2, 3, 4)
+	D.Warn(1, 2, 3, 4)
+	D.Error(1, 2, 3, 4)
 }
 
 func TestFileLogger(t *testing.T) {

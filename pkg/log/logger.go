@@ -74,50 +74,6 @@ func NewLogger(cfg LoggerConfig) Logger {
 	return logger
 }
 
-func SetLevel(level logrus.Level) {
-	D.SetLevel(level)
-}
-
-func Tracef(format string, args ...interface{}) {
-	D.Tracef(format, args...)
-}
-
-func Debugf(format string, args ...interface{}) {
-	D.Debugf(format, args...)
-}
-
-func Infof(format string, args ...interface{}) {
-	D.Infof(format, args...)
-}
-
-func Warnf(format string, args ...interface{}) {
-	D.Warnf(format, args...)
-}
-
-func Errorf(format string, args ...interface{}) {
-	D.Errorf(format, args...)
-}
-
-func Trace(args ...interface{}) {
-	D.Trace(args...)
-}
-
-func Debug(args ...interface{}) {
-	D.Debug(args...)
-}
-
-func Info(args ...interface{}) {
-	D.Info(args...)
-}
-
-func Warn(args ...interface{}) {
-	D.Warn(args...)
-}
-
-func Error(args ...interface{}) {
-	D.Error(args...)
-}
-
 func init() {
 	D = NewLogger(LoggerConfig{LogLevel: logrus.InfoLevel})
 }
