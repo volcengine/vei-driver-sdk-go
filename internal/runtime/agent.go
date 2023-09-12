@@ -24,6 +24,7 @@ import (
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/status"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
 )
 
 type Agent struct {
@@ -45,7 +46,7 @@ type Agent struct {
 
 func (a *Agent) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues,
 	deviceCh chan<- []sdkmodels.DiscoveredDevice) error {
-	a.log = lc
+	a.log = log.C
 	a.asyncCh = asyncCh
 	a.deviceCh = deviceCh
 	a.service = service.RunningService()

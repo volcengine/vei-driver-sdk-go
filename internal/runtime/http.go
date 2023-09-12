@@ -27,6 +27,7 @@ import (
 
 const (
 	ApiDebugRoute         = common.ApiBase + "/debug"
+	ApiDebugLogging       = common.ApiBase + "/logging"
 	ApiAutoDiscoveryRoute = common.ApiBase + "/autodiscovery"
 )
 
@@ -39,6 +40,7 @@ type Route struct {
 func RegisterRoutes() error {
 	routes := []Route{
 		{route: ApiDebugRoute, handler: debug.Debug(agent.debugger), method: []string{http.MethodPost}},
+		{route: ApiDebugLogging, handler: debug.SetDefaultLogLevel, method: []string{http.MethodGet, http.MethodPost}},
 		{route: ApiAutoDiscoveryRoute, handler: discovery.Discover(agent.discovery), method: []string{http.MethodGet}},
 	}
 	for _, route := range routes {
