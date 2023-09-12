@@ -20,7 +20,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-type EventCallback interface {
+type EventReporter interface {
 	ReportEvent(deviceName string, value *models.CommandValue) error
 	ReportEvents(deviceName string, values []*models.CommandValue) error
 }
