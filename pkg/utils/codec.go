@@ -24,11 +24,13 @@ import (
 
 	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 const (
 	URLRawQuery   = "urlRawQuery"
 	ServiceParams = "service_params"
+	Passage       = "passage"
 )
 
 func ParametersFromURLRawQuery(req sdkmodels.CommandRequest) ([]byte, errors.EdgeX) {
@@ -58,4 +60,11 @@ func ObjectToQueryParam(obj interface{}) (map[string]string, error) {
 	}
 	result[ServiceParams] = base64.StdEncoding.EncodeToString(data)
 	return result, nil
+}
+
+func PassageFromProtocols(protocols map[string]models.ProtocolProperties) (map[string]string, errors.EdgeX) {
+	if passage, ok := protocols[Passage]; ok {
+		return passage, nil
+	}
+	return nil, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to extract passage info from device protocols: key '%s' not found", Passage), nil)
 }

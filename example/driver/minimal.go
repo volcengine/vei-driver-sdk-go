@@ -31,15 +31,17 @@ import (
 )
 
 type MinimalDriver struct {
-	lc      logger.LoggingClient
-	asyncCh chan<- *sdkmodels.AsyncValues
+	lc       logger.LoggingClient
+	asyncCh  chan<- *sdkmodels.AsyncValues
+	reporter interfaces.EventReporter
 }
 
 var _ interfaces.Driver = (*MinimalDriver)(nil)
 
-func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, deviceCh chan<- []sdkmodels.DiscoveredDevice, eventCallback interfaces.EventCallback) error {
+func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, eventReporter interfaces.EventReporter) error {
 	m.lc = lc
 	m.asyncCh = asyncCh
+	m.reporter = eventReporter
 	return nil
 }
 

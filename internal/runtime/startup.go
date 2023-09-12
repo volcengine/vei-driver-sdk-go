@@ -29,7 +29,7 @@ import (
 var agent *Agent
 var _ sdkmodels.ProtocolDriver = (*Agent)(nil)
 var _ sdkmodels.ProtocolDiscovery = (*Agent)(nil)
-var _ interfaces.EventCallback = (*Agent)(nil)
+var _ interfaces.EventReporter = (*Agent)(nil)
 
 type Option func(agent *Agent)
 

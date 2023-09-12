@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package interfaces
+package writer
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"io"
+	"os"
 )
 
-type EventReporter interface {
-	ReportEvent(deviceName string, value *models.CommandValue) error
-	ReportEvents(deviceName string, values []*models.CommandValue) error
+func Stdout() io.Writer {
+	return os.Stdout
+}
+
+func Stderr() io.Writer {
+	return os.Stderr
 }

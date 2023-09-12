@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package interfaces
+package writer
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-type EventReporter interface {
-	ReportEvent(deviceName string, value *models.CommandValue) error
-	ReportEvents(deviceName string, values []*models.CommandValue) error
+func TestStdout(t *testing.T) {
+	stdout := Stdout()
+	require.NotNil(t, stdout)
+}
+
+func TestStderr(t *testing.T) {
+	stderr := Stderr()
+	require.NotNil(t, stderr)
 }

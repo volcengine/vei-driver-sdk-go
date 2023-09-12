@@ -14,13 +14,20 @@
  * limitations under the License.
  */
 
-package interfaces
+package utils
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"github.com/go-playground/validator/v10"
 )
 
-type EventReporter interface {
-	ReportEvent(deviceName string, value *models.CommandValue) error
-	ReportEvents(deviceName string, values []*models.CommandValue) error
+func Validate(s interface{}) error {
+	return validator.New().Struct(s)
+}
+
+func Ternary[T any](x bool, a T, b T) T {
+	if x {
+		return a
+	} else {
+		return b
+	}
 }

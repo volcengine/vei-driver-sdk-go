@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package interfaces
+package format
 
 import (
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+	"testing"
+
+	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/require"
 )
 
-type EventReporter interface {
-	ReportEvent(deviceName string, value *models.CommandValue) error
-	ReportEvents(deviceName string, values []*models.CommandValue) error
+func TestPlainFormatter_Format(t *testing.T) {
+	formatter := NewPlainFormatter()
+	_, err := formatter.Format(&logrus.Entry{})
+	require.NoError(t, err)
 }

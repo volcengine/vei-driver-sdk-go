@@ -37,3 +37,10 @@ func DeviceCommand(deviceName string, commandName string) (models.DeviceCommand,
 func DeviceResource(deviceName string, deviceResource string) (models.DeviceResource, bool) {
 	return service.RunningService().DeviceResource(deviceName, deviceResource)
 }
+
+// LoadCustomConfig uses the Config Processor from go-mod-bootstrap to attempt to load service's
+// custom configuration. It uses the same command line flags to process the custom config in the same manner
+// as the standard configuration.
+func LoadCustomConfig(customConfig service.UpdatableConfig, sectionName string) error {
+	return service.RunningService().LoadCustomConfig(customConfig, sectionName)
+}

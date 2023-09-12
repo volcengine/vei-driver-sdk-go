@@ -25,6 +25,7 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
+	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -51,7 +52,7 @@ func NewManager(decision OfflineDecision, ds interfaces.DeviceServiceSDK) (*Mana
 		devices:  make(map[string]*ManagedDevice, 0),
 		decision: decision,
 		mutex:    sync.Mutex{},
-		logger:   ds.GetLoggingClient(),
+		logger:   log.C,
 		ds:       ds,
 	}
 	return m, ValidateOfflineDecision(m.decision)
