@@ -17,6 +17,9 @@
 package runtime
 
 import (
+	"context"
+	"sync"
+
 	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
@@ -71,6 +74,24 @@ func (a *Agent) HandleWriteCommands(deviceName string, protocols map[string]mode
 		a.StatusManager.OnHandleCommandsSuccessfully(deviceName)
 	}
 	return err
+}
+
+func (a *Agent) HandleAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer func() {
+		wg.Done()
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			a.log.Infof("Stop handle async results...")
+			return
+		case result := <-a.async:
+			a.StatusManager.OnHandleCommandsSuccessfully(result.DeviceName)
+			a.asyncCh <- result
+		}
+	}
 }
 
 func (a *Agent) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
