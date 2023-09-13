@@ -1,7 +1,7 @@
 # vei-driver-sdk-go
 欢迎使用边缘智能驱动开发SDK for Golang，本文档为您介绍如何开发一个自定义驱动
 
-[边缘智能产品控制台](https://console.volcengine.com/vei)
+[边缘智能产品主页](https://www.volcengine.com/product/vei/mainpage)
 ## 驱动开发步骤
 
 ### 1. 程序入口
