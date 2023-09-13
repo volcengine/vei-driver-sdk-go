@@ -1,0 +1,10 @@
+template: go
+name: unit-test
+trigger:
+  change:
+go_version: "1.18"
+commands:
+  - apt update && apt install -y libzmq3-dev snapd
+  - gofmt -w . && go clean -modcache && go mod tidy
+  - go test -gcflags="all=-l -N" -coverprofile=coverage.out -v $(go list ./... | grep -v mocks)
+coverage_file_name: "coverage.out"
