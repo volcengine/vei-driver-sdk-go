@@ -67,5 +67,14 @@ func TestExceedConsecutiveErrorNum(t *testing.T) {
 	}
 	require.Greater(t, len(mockDevice.Labels), 0)
 	require.Contains(t, mockDevice.Labels[0], Offline, mockDevice.Labels)
+
+	manager.OnHandleCommandsSuccessfully(mockDevice.Name)
+	require.Greater(t, len(mockDevice.Labels), 0)
+	require.Contains(t, mockDevice.Labels[0], Online, mockDevice.Labels)
+
+	manager.SetDeviceOffline(mockDevice.Name)
+	require.Greater(t, len(mockDevice.Labels), 0)
+	require.Contains(t, mockDevice.Labels[0], Offline, mockDevice.Labels)
+
 	manager.OnRemoveDevice(mockDevice.Name)
 }

@@ -17,8 +17,16 @@
 package interfaces
 
 type Manager interface {
+	// OnAddDevice is a callback function that is invoked when a new device is added
 	OnAddDevice(deviceName string)
+	// OnRemoveDevice is a callback function that is invoked when a device is removed
 	OnRemoveDevice(deviceName string)
+	// OnHandleCommandsFailed is a callback function that is invoked when failed to
+	// handle read/write commands or call service.
 	OnHandleCommandsFailed(deviceName string)
+	// OnHandleCommandsSuccessfully is a callback function that is invoked when handling
+	// read/write commands or calling service or reporting async data
 	OnHandleCommandsSuccessfully(deviceName string)
+	// SetDeviceOffline will set the specified device to offline status
+	SetDeviceOffline(deviceName string)
 }

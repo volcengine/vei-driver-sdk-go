@@ -48,9 +48,9 @@ type Driver interface {
 // DeviceHandler is an optional interface to handle the system event of device
 type DeviceHandler interface {
 	// AddDevice is a callback function that is invoked when a new device associated with this driver is added
-	AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error
+	AddDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
 	// UpdateDevice is a callback function that is invoked when a device associated with this driver is updated
-	UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error
+	UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
 	// RemoveDevice is a callback function that is invoked when a device associated with this driver is removed
 	RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error
 }

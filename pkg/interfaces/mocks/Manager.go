@@ -29,6 +29,11 @@ func (_m *Manager) OnRemoveDevice(deviceName string) {
 	_m.Called(deviceName)
 }
 
+// SetDeviceOffline provides a mock function with given fields: deviceName
+func (_m *Manager) SetDeviceOffline(deviceName string) {
+	_m.Called(deviceName)
+}
+
 type mockConstructorTestingTNewManager interface {
 	mock.TestingT
 	Cleanup(func())

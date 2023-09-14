@@ -59,3 +59,7 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 
 	startup.Bootstrap(agent.name, agent.version, agent)
 }
+
+func StatusManager() interfaces.Manager {
+	return agent.StatusManager
+}
