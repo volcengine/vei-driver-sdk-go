@@ -100,7 +100,7 @@ func (a *Agent) AddDevice(deviceName string, protocols map[string]models.Protoco
 	if a.handler == nil {
 		return nil
 	}
-	return a.handler.AddDevice(deviceName, protocols, adminState)
+	return a.handler.AddDevice(deviceName, protocols)
 }
 
 func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
@@ -108,7 +108,7 @@ func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.Prot
 	if a.handler == nil {
 		return nil
 	}
-	return a.handler.UpdateDevice(deviceName, protocols, adminState)
+	return a.handler.UpdateDevice(deviceName, protocols)
 }
 
 func (a *Agent) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {

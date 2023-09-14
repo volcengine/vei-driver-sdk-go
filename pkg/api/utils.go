@@ -21,6 +21,8 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+
+	"github.com/volcengine/vei-driver-sdk-go/internal/runtime"
 )
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
@@ -32,4 +34,9 @@ func AddRoute(route string, handler func(http.ResponseWriter, *http.Request), me
 // with service.DeviceService.LoggingClient struct field.
 func GetLoggingClient() logger.LoggingClient {
 	return service.RunningService().GetLoggingClient()
+}
+
+// SetDeviceOffline will call the SetDeviceOffline interface impl by the status manager
+func SetDeviceOffline(deviceName string) {
+	runtime.StatusManager().SetDeviceOffline(deviceName)
 }

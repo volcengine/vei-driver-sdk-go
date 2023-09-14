@@ -12,13 +12,13 @@ type DeviceHandler struct {
 	mock.Mock
 }
 
-// AddDevice provides a mock function with given fields: deviceName, protocols, adminState
-func (_m *DeviceHandler) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	ret := _m.Called(deviceName, protocols, adminState)
+// AddDevice provides a mock function with given fields: deviceName, protocols
+func (_m *DeviceHandler) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
+	ret := _m.Called(deviceName, protocols)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, map[string]models.ProtocolProperties, models.AdminState) error); ok {
-		r0 = rf(deviceName, protocols, adminState)
+	if rf, ok := ret.Get(0).(func(string, map[string]models.ProtocolProperties) error); ok {
+		r0 = rf(deviceName, protocols)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -40,13 +40,13 @@ func (_m *DeviceHandler) RemoveDevice(deviceName string, protocols map[string]mo
 	return r0
 }
 
-// UpdateDevice provides a mock function with given fields: deviceName, protocols, adminState
-func (_m *DeviceHandler) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	ret := _m.Called(deviceName, protocols, adminState)
+// UpdateDevice provides a mock function with given fields: deviceName, protocols
+func (_m *DeviceHandler) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
+	ret := _m.Called(deviceName, protocols)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, map[string]models.ProtocolProperties, models.AdminState) error); ok {
-		r0 = rf(deviceName, protocols, adminState)
+	if rf, ok := ret.Get(0).(func(string, map[string]models.ProtocolProperties) error); ok {
+		r0 = rf(deviceName, protocols)
 	} else {
 		r0 = ret.Error(0)
 	}
