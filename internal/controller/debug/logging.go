@@ -39,6 +39,7 @@ func SetDefaultLogLevel(writer http.ResponseWriter, request *http.Request) {
 		return
 	}
 	log.D.SetLevel(level)
+	_ = log.C.SetLogLevel(level.String())
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte("success"))
 	log.D.Infof("update default log level to '%s'", level.String())
