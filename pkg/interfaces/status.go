@@ -29,4 +29,6 @@ type Manager interface {
 	OnHandleCommandsSuccessfully(deviceName string)
 	// SetDeviceOffline will set the specified device to offline status
 	SetDeviceOffline(deviceName string)
+	// SetDeviceOnline will set the specified device to online status
+	SetDeviceOnline(deviceName string)
 }

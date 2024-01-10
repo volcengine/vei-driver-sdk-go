@@ -93,6 +93,13 @@ func (m *Manager) SetDeviceOffline(deviceName string) {
 	m.updateDeviceStatus(device, Offline)
 }
 
+func (m *Manager) SetDeviceOnline(deviceName string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+	device := m.getManagedDevice(deviceName)
+	m.updateDeviceStatus(device, Online)
+}
+
 func (m *Manager) getManagedDevice(deviceName string) *ManagedDevice {
 	device := m.devices[deviceName]
 	if device == nil {
