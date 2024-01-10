@@ -40,3 +40,9 @@ func GetLoggingClient() logger.LoggingClient {
 func SetDeviceOffline(deviceName string) {
 	runtime.StatusManager().SetDeviceOffline(deviceName)
 }
+
+// SetDeviceOnline will call the SetDeviceOnline interface impl by the status manager
+func SetDeviceOnline(deviceName string) {
+	runtime.StatusManager().SetDeviceOnline(deviceName)
+}
+
