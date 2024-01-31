@@ -12,7 +12,7 @@ import (
 )
 
 type MediaServerClientInterface interface {
-	GetSnap(streamURI string) ([]byte, errors.EdgeX)
+	GetSnap(streamURI string) ([]byte, error)
 }
 
 const (
@@ -37,7 +37,7 @@ func NewClient(baseURL string, secret string, lc logger.LoggingClient) (MediaSer
 	return &Client{baseURL: parsedURL.String(), secret: secret, ctx: context.Background(), lc: lc}, nil
 }
 
-func (zc Client) GetSnap(streamURI string) ([]byte, errors.EdgeX) {
+func (zc Client) GetSnap(streamURI string) ([]byte, error) {
 	requestParams := url.Values{}
 	requestParams.Set("url", streamURI)
 	requestParams.Set("timeout_sec", "10")
