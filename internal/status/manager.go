@@ -17,15 +17,11 @@
 package status
 
 import (
-	"encoding/json"
-	"strings"
 	"sync"
 	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-
 	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/models"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -33,27 +29,25 @@ type Manager struct {
 	devices  map[string]*ManagedDevice
 	decision OfflineDecision
 	mutex    sync.Mutex
-	logger   logger.LoggingClient
-	ds       interfaces.DeviceServiceSDK
+	logger   log.Logger
 }
 
-func Default(ds interfaces.DeviceServiceSDK) (OfflineDecision, *Manager) {
+func Default() (OfflineDecision, *Manager) {
 	consecutiveErrorNum := utils.GetIntEnv("ERROR_NUM_THRESHOLD", 10)
 	if consecutiveErrorNum <= 0 {
 		consecutiveErrorNum = 10
 	}
 	decision := NewOfflineDecision(ExceedConsecutiveErrorNum, consecutiveErrorNum)
-	manager, _ := NewManager(decision, ds)
+	manager, _ := NewManager(decision)
 	return decision, manager
 }
 
-func NewManager(decision OfflineDecision, ds interfaces.DeviceServiceSDK) (*Manager, error) {
+func NewManager(decision OfflineDecision) (*Manager, error) {
 	m := &Manager{
 		devices:  make(map[string]*ManagedDevice, 0),
 		decision: decision,
 		mutex:    sync.Mutex{},
-		logger:   log.C,
-		ds:       ds,
+		logger:   log.D,
 	}
 	return m, ValidateOfflineDecision(m.decision)
 }
@@ -61,103 +55,84 @@ func NewManager(decision OfflineDecision, ds interfaces.DeviceServiceSDK) (*Mana
 func (m *Manager) OnAddDevice(deviceName string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	m.devices[deviceName] = NewManagedDevice(deviceName, m.ds)
+
+	device := NewManagedDevice(deviceName)
+	m.devices[deviceName] = device
+	go device.ReportPeriodically()
 }
 
 func (m *Manager) OnRemoveDevice(deviceName string) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	delete(m.devices, deviceName)
-}
 
-func (m *Manager) OnHandleCommandsFailed(deviceName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	device := m.getManagedDevice(deviceName)
-	device.ConsecutiveErrorNum.Inc(1)
-	m.trySetDeviceOffline(device)
-}
-
-func (m *Manager) OnHandleCommandsSuccessfully(deviceName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	device := m.getManagedDevice(deviceName)
-	device.ConsecutiveErrorNum.Clear()
-	m.updateDeviceStatus(device, Online)
-}
-
-func (m *Manager) SetDeviceOffline(deviceName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	device := m.getManagedDevice(deviceName)
-	m.updateDeviceStatus(device, Offline)
-}
-
-func (m *Manager) SetDeviceOnline(deviceName string) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-	device := m.getManagedDevice(deviceName)
-	m.updateDeviceStatus(device, Online)
-}
-
-func (m *Manager) getManagedDevice(deviceName string) *ManagedDevice {
 	device := m.devices[deviceName]
-	if device == nil {
-		device = NewManagedDevice(deviceName, m.ds)
-		m.devices[deviceName] = device
+	if device != nil {
+		device.Stop()
+		delete(m.devices, deviceName)
 	}
-	return device
 }
 
-func (m *Manager) trySetDeviceOffline(device *ManagedDevice) {
+func (m *Manager) OnHandleCommandsFailed(deviceName string, n int64) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	device := m.getManagedDevice(deviceName)
+	device.DeltaFailures.Inc(n)
+	device.ConsecutiveErrorNum.Inc(n)
+
 	switch m.decision.policy {
 	case ExceedConsecutiveErrorNum:
 		if device.ConsecutiveErrorNum.Count() > m.decision.threshold {
-			m.updateDeviceStatus(device, Offline)
+			device.Status = string(models.DOWN)
 		}
 	default:
 		m.logger.Warnf("offline decision policy [%s] has not been implemented", m.decision.policy)
 	}
 }
 
-func (m *Manager) updateDeviceStatus(device *ManagedDevice, newStatus DeviceStatus) {
-	cachedDevice, err := m.ds.GetDeviceByName(device.Name)
-	if err != nil {
-		m.logger.Errorf("failed to get device by name '%s'", device.Name)
-	}
+func (m *Manager) OnHandleCommandsSuccessfully(deviceName string, n int64) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	if device.Status == newStatus {
-		return
-	}
+	device := m.getManagedDevice(deviceName)
+	device.DeltaCollected.Inc(n)
+	device.ConsecutiveErrorNum.Clear()
 
-	device.Status = newStatus
-	if newStatus == Online {
-		now := time.Now()
-		device.OnlineTime = now.UnixMilli()
-		m.logger.Infof("change device '%s' status to [%s] at %s", device.Name, device.Status, now.Format(time.RFC3339))
-	} else if newStatus == Offline {
-		now := time.Now()
-		device.OfflineTime = now.UnixMilli()
-		m.logger.Infof("change device '%s' status to [%s] at %s", device.Name, device.Status, now.Format(time.RFC3339))
-	}
+	device.Status = string(models.UP)
+	device.LastReportedTime = time.Now().UnixMilli()
+}
 
-	labelIdx := -1
-	for idx, label := range cachedDevice.Labels {
-		if strings.HasPrefix(label, LabelPrefix) {
-			labelIdx = idx
-		}
-	}
+func (m *Manager) SetDeviceOffline(deviceName string, reason string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	content, _ := json.Marshal(device)
-	newLabel := LabelPrefix + string(content)
+	device := m.getManagedDevice(deviceName)
+	device.Status = string(models.DOWN)
+	device.Reason = reason
+}
 
-	if labelIdx != -1 {
-		cachedDevice.Labels[labelIdx] = newLabel
-	} else {
-		cachedDevice.Labels = append(cachedDevice.Labels, newLabel)
-	}
+func (m *Manager) SetDeviceOnline(deviceName string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	if err = m.ds.UpdateDevice(cachedDevice); err != nil {
-		m.logger.Errorf("failed to update device %s", device.Name)
+	device := m.getManagedDevice(deviceName)
+	device.Status = string(models.UP)
+}
+
+func (m *Manager) UpdateDeviceStatus(deviceName string, status string, reason string) {
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
+
+	device := m.getManagedDevice(deviceName)
+	device.Status = status
+	device.Reason = reason
+}
+
+func (m *Manager) getManagedDevice(deviceName string) *ManagedDevice {
+	device := m.devices[deviceName]
+	if device == nil {
+		device = NewManagedDevice(deviceName)
+		m.devices[deviceName] = device
 	}
+	return device
 }
