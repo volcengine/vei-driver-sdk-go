@@ -16,19 +16,21 @@
 
 package interfaces
 
-type Manager interface {
+type StatusManager interface {
 	// OnAddDevice is a callback function that is invoked when a new device is added
 	OnAddDevice(deviceName string)
 	// OnRemoveDevice is a callback function that is invoked when a device is removed
 	OnRemoveDevice(deviceName string)
 	// OnHandleCommandsFailed is a callback function that is invoked when failed to
 	// handle read/write commands or call service.
-	OnHandleCommandsFailed(deviceName string)
+	OnHandleCommandsFailed(deviceName string, n int64)
 	// OnHandleCommandsSuccessfully is a callback function that is invoked when handling
 	// read/write commands or calling service or reporting async data
-	OnHandleCommandsSuccessfully(deviceName string)
+	OnHandleCommandsSuccessfully(deviceName string, n int64)
 	// SetDeviceOffline will set the specified device to offline status
-	SetDeviceOffline(deviceName string)
+	SetDeviceOffline(deviceName string, reason string)
 	// SetDeviceOnline will set the specified device to online status
 	SetDeviceOnline(deviceName string)
+	// UpdateDeviceStatus supports to set the customized device status.
+	UpdateDeviceStatus(deviceName string, status string, reason string)
 }
