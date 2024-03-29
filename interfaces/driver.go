@@ -39,7 +39,7 @@ type Driver interface {
 	WriteProperty(device *models.Device, reqs []models.WriteRequest) error
 	// CallService passes a CallRequest which representing a service call operation for the specific device resource.
 	// The payload can be obtained through the Payload function.
-	CallService(device *models.Device, req models.CallRequest) error
+	CallService(device *models.Device, reqs []models.CallRequest) error
 	// Stop instructs the protocol-specific DS code to shut down gracefully, or
 	// if the force parameter is 'true', immediately. The driver is responsible
 	// for closing any in-use channels, including the channel used to send async
