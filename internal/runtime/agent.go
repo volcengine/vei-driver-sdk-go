@@ -23,11 +23,12 @@ import (
 	sdkinterfaces "github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
 	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/service"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	lc "github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/status"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -38,43 +39,50 @@ type Agent struct {
 	handler   interfaces.DeviceHandler
 	discovery interfaces.Discovery
 	debugger  interfaces.Debugger
-	reporter  interfaces.EventReporter
 	service   sdkinterfaces.DeviceServiceSDK
-	asyncCh   chan<- *sdkmodels.AsyncValues // used by sdk
+	asyncCh   chan<- *sdkmodels.AsyncValues // used by agent
 	deviceCh  chan<- []sdkmodels.DiscoveredDevice
-	log       logger.LoggingClient
+	log       logger.Logger
 
 	ctx   context.Context
 	stop  context.CancelFunc
 	wg    *sync.WaitGroup
-	async chan *sdkmodels.AsyncValues // used by driver
+	async chan *contracts.AsyncValues // used by driver
 
+	// if the driver is in strict mode, any error in request will be returned, ignored otherwise.
+	StrictMode bool
+	// now only the decision of 'ConsecutiveErrorNum' can be used
 	OfflineDecision status.OfflineDecision
-	StatusManager   interfaces.Manager
+	// if no StatusManager is specified, a default one will be initialized
+	StatusManager interfaces.StatusManager
 }
 
-func (a *Agent) Initialize(_ logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues,
+func (a *Agent) Initialize(_ lc.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues,
 	deviceCh chan<- []sdkmodels.DiscoveredDevice) error {
-	log.C.Infof("Initialize Driver Agent...")
+	logger.D.Infof("Initialize Driver Agent...")
 
-	a.log = log.C
+	a.log = logger.D
 	a.asyncCh = asyncCh
 	a.deviceCh = deviceCh
 	a.service = service.RunningService()
-	a.reporter = a
 
 	a.ctx, a.stop = context.WithCancel(context.Background())
 	a.wg = &sync.WaitGroup{}
 
 	bufferSize := utils.GetIntEnv("DEVICE_ASYNCBUFFERSIZE", 10)
-	a.async = make(chan *sdkmodels.AsyncValues, bufferSize)
+	a.async = make(chan *contracts.AsyncValues, bufferSize)
 	go a.HandleAsyncResults(a.ctx, a.wg)
 	a.log.Infof("Set async buffer size: %d", bufferSize)
 
+	deviceNames := make([]string, 0)
+	for _, device := range a.service.Devices() {
+		deviceNames = append(deviceNames, device.Name)
+	}
+
 	if a.StatusManager == nil {
-		manager, err := status.NewManager(a.OfflineDecision, a.service)
+		manager, err := status.NewManager(deviceNames, a.OfflineDecision)
 		if err != nil {
-			a.OfflineDecision, a.StatusManager = status.Default(a.service)
+			a.OfflineDecision, a.StatusManager = status.Default(deviceNames)
 			a.log.Infof("Use the default status manager with offline decision: %+v", a.OfflineDecision)
 		} else {
 			a.StatusManager = manager
@@ -86,7 +94,7 @@ func (a *Agent) Initialize(_ logger.LoggingClient, asyncCh chan<- *sdkmodels.Asy
 		return err
 	}
 
-	return a.driver.Initialize(a.log, a.async, a.reporter)
+	return a.driver.Initialize(a.log, a.async)
 }
 
 func (a *Agent) Stop(force bool) error {
