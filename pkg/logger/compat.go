@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package log
+package logger
 
 import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"

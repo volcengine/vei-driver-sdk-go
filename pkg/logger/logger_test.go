@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package log
+package logger
 
 import (
 	"io"
@@ -23,8 +23,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log/format"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log/writer"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger/format"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger/writer"
 )
 
 func TestDefaultLogger(t *testing.T) {
