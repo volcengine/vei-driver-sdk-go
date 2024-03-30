@@ -14,4 +14,23 @@
  * limitations under the License.
  */
 
-package models
+package contracts
+
+import (
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
+)
+
+// AsyncValues is the struct for sending Device readings asynchronously via ProtocolDrivers
+type AsyncValues struct {
+	DeviceName    string
+	SourceName    string
+	CommandValues []*models.CommandValue
+}
+
+func (v *AsyncValues) Transform() *models.AsyncValues {
+	return &models.AsyncValues{
+		DeviceName:    v.DeviceName,
+		SourceName:    v.SourceName,
+		CommandValues: v.CommandValues,
+	}
+}

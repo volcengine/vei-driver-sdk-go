@@ -14,52 +14,66 @@
  * limitations under the License.
  */
 
-package models
+package contracts
 
 import (
-	contracts "github.com/edgexfoundry/go-mod-core-contracts/v2/models"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
 // OperatingState is an indication of the operations of the device.
 type OperatingState string
 
 const (
-	REACHABLE   OperatingState = "Reachable"
-	UNREACHABLE OperatingState = "Unreachable"
 	UP          OperatingState = "Up"
 	DOWN        OperatingState = "Down"
 	UNKNOWN     OperatingState = "Unknown"
+	REACHABLE   OperatingState = "Reachable"
+	UNREACHABLE OperatingState = "Unreachable"
 )
+
+func (s OperatingState) String() string {
+	return string(s)
+}
 
 // Device contains the necessary information of a device.
 type Device struct {
 	Name           string
-	Protocols      map[string]contracts.ProtocolProperties
+	Protocols      map[string]models.ProtocolProperties
 	OperatingState OperatingState
 	Message        string
 }
 
-func WrapDevice(name string, protocols map[string]contracts.ProtocolProperties) *Device {
+func WrapDevice(name string, protocols map[string]models.ProtocolProperties) *Device {
 	return &Device{Name: name, Protocols: protocols}
 }
 
 // GetProtocolByName returns the protocol specified by name.
-func (d *Device) GetProtocolByName(name string) (contracts.ProtocolProperties, bool) {
+func (d *Device) GetProtocolByName(name string) (models.ProtocolProperties, bool) {
 	protocol, exist := d.Protocols[name]
 	return protocol, exist
 }
 
-// SetDeviceReachable set the device state to REACHABLE.
-func (d *Device) SetDeviceReachable() {
+// SetStateUp set the device state to UP.
+func (d *Device) SetStateUp() {
+	d.OperatingState = UP
+}
+
+// SetStateDown set the device state to DOWN.
+func (d *Device) SetStateDown() {
+	d.OperatingState = DOWN
+}
+
+// SetStateReachable set the device state to REACHABLE.
+func (d *Device) SetStateReachable() {
 	d.OperatingState = REACHABLE
 }
 
-// SetDeviceUnreachable set the device state to UNREACHABLE.
-func (d *Device) SetDeviceUnreachable() {
+// SetStateUnreachable set the device state to UNREACHABLE.
+func (d *Device) SetStateUnreachable() {
 	d.OperatingState = UNREACHABLE
 }
 
-// SetDeviceOperatingState supports to set the customized device state.
-func (d *Device) SetDeviceOperatingState(state OperatingState, message string) {
+// SetOperatingState supports to set the device state customarily.
+func (d *Device) SetOperatingState(state OperatingState, message string) {
 	d.OperatingState, d.Message = state, message
 }
