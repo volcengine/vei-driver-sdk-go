@@ -13,7 +13,7 @@ password = ""
 [Writable.Reading]
 ReadingUnits = true
 [Writable.Telemetry]
-Interval = "30s"
+Interval = ""
 PublishTopicPrefix  = "edgex/telemetry" # /<service-name>/<metric-name> will be added to this Publish Topic prefix
 [Writable.Telemetry.Metrics] # All service's metric names must be present in this list.
 # Custom Device Service Metrics
@@ -122,7 +122,7 @@ UpdateLastConnected = false
 AsyncBufferSize = 1
 EnableAsyncReadings = true
 Labels = []
-UseMessageBus = true
+UseMessageBus = false
 [Device.Discovery]
 Enabled = false
 Interval = "30s"
