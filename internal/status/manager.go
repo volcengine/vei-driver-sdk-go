@@ -20,8 +20,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/models"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -29,27 +29,38 @@ type Manager struct {
 	devices  map[string]*ManagedDevice
 	decision OfflineDecision
 	mutex    sync.Mutex
-	logger   log.Logger
+	logger   logger.Logger
 }
 
-func Default() (OfflineDecision, *Manager) {
+func Default(deviceNames []string) (OfflineDecision, *Manager) {
 	consecutiveErrorNum := utils.GetIntEnv("ERROR_NUM_THRESHOLD", 10)
 	if consecutiveErrorNum <= 0 {
 		consecutiveErrorNum = 10
 	}
 	decision := NewOfflineDecision(ExceedConsecutiveErrorNum, consecutiveErrorNum)
-	manager, _ := NewManager(decision)
+	manager, _ := NewManager(deviceNames, decision)
 	return decision, manager
 }
 
-func NewManager(decision OfflineDecision) (*Manager, error) {
+func NewManager(deviceNames []string, decision OfflineDecision) (*Manager, error) {
+	if err := ValidateOfflineDecision(decision); err != nil {
+		return nil, err
+	}
+
 	m := &Manager{
 		devices:  make(map[string]*ManagedDevice, 0),
 		decision: decision,
 		mutex:    sync.Mutex{},
-		logger:   log.D,
+		logger:   logger.D,
 	}
-	return m, ValidateOfflineDecision(m.decision)
+
+	for _, deviceName := range deviceNames {
+		device := NewManagedDevice(deviceName)
+		m.devices[deviceName] = device
+		go device.ReportPeriodically()
+	}
+
+	return m, nil
 }
 
 func (m *Manager) OnAddDevice(deviceName string) {
@@ -83,7 +94,7 @@ func (m *Manager) OnHandleCommandsFailed(deviceName string, n int64) {
 	switch m.decision.policy {
 	case ExceedConsecutiveErrorNum:
 		if device.ConsecutiveErrorNum.Count() > m.decision.threshold {
-			device.Status = string(models.DOWN)
+			device.Status = string(contracts.DOWN)
 		}
 	default:
 		m.logger.Warnf("offline decision policy [%s] has not been implemented", m.decision.policy)
@@ -98,7 +109,7 @@ func (m *Manager) OnHandleCommandsSuccessfully(deviceName string, n int64) {
 	device.DeltaCollected.Inc(n)
 	device.ConsecutiveErrorNum.Clear()
 
-	device.Status = string(models.UP)
+	device.Status = string(contracts.UP)
 	device.LastReportedTime = time.Now().UnixMilli()
 }
 
@@ -107,7 +118,7 @@ func (m *Manager) SetDeviceOffline(deviceName string, reason string) {
 	defer m.mutex.Unlock()
 
 	device := m.getManagedDevice(deviceName)
-	device.Status = string(models.DOWN)
+	device.Status = string(contracts.DOWN)
 	device.Reason = reason
 }
 
@@ -116,7 +127,7 @@ func (m *Manager) SetDeviceOnline(deviceName string) {
 	defer m.mutex.Unlock()
 
 	device := m.getManagedDevice(deviceName)
-	device.Status = string(models.UP)
+	device.Status = string(contracts.UP)
 }
 
 func (m *Manager) UpdateDeviceStatus(deviceName string, status string, reason string) {

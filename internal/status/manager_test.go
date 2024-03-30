@@ -21,8 +21,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/volcengine/vei-driver-sdk-go/interfaces"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/models"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
 var (
@@ -30,14 +30,14 @@ var (
 )
 
 func TestDefaultManager(t *testing.T) {
-	_, manager := Default()
+	_, manager := Default(nil)
 	require.NotNil(t, manager)
 	require.Equal(t, ExceedConsecutiveErrorNum, manager.decision.policy)
 	require.Equal(t, int64(10), manager.decision.threshold)
 }
 
 func TestExceedConsecutiveErrorNum(t *testing.T) {
-	_, manager := Default()
+	_, manager := Default(nil)
 	require.NotNil(t, manager)
 
 	deviceName := "device1"
@@ -45,23 +45,23 @@ func TestExceedConsecutiveErrorNum(t *testing.T) {
 
 	manager.OnHandleCommandsSuccessfully(deviceName, 10)
 	device := manager.getManagedDevice(deviceName)
-	require.Equal(t, string(models.UP), device.Status)
+	require.Equal(t, string(contracts.UP), device.Status)
 
 	manager.OnHandleCommandsFailed(deviceName, 20)
 	device = manager.getManagedDevice(deviceName)
-	require.Equal(t, string(models.DOWN), device.Status)
+	require.Equal(t, string(contracts.DOWN), device.Status)
 
 	manager.SetDeviceOnline(deviceName)
 	device = manager.getManagedDevice(deviceName)
-	require.Equal(t, string(models.UP), device.Status)
+	require.Equal(t, string(contracts.UP), device.Status)
 
 	manager.SetDeviceOffline(deviceName, "")
 	device = manager.getManagedDevice(deviceName)
-	require.Equal(t, string(models.DOWN), device.Status)
+	require.Equal(t, string(contracts.DOWN), device.Status)
 
-	manager.UpdateDeviceStatus(deviceName, string(models.UNREACHABLE), "")
+	manager.UpdateDeviceStatus(deviceName, string(contracts.UNREACHABLE), "")
 	device = manager.getManagedDevice(deviceName)
-	require.Equal(t, string(models.UNREACHABLE), device.Status)
+	require.Equal(t, string(contracts.UNREACHABLE), device.Status)
 
 	manager.OnRemoveDevice(deviceName)
 }

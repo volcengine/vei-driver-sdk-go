@@ -30,7 +30,7 @@ import (
 	"github.com/volcengine/vei-driver-sdk-go/extension/interfaces"
 	"github.com/volcengine/vei-driver-sdk-go/extension/interfaces/mocks"
 	"github.com/volcengine/vei-driver-sdk-go/extension/responses"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/models"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 )
 
 func MockDeviceStatusClient() interfaces.DeviceStatusClient {
@@ -38,7 +38,7 @@ func MockDeviceStatusClient() interfaces.DeviceStatusClient {
 	mockClient.On("DeviceStatusByName", mock.Anything, "device1").Return(
 		responses.DeviceStatusResponse{}, errors.NewCommonEdgeXWrapper(fmt.Errorf("status not found")))
 	mockClient.On("DeviceStatusByName", mock.Anything, mock.Anything).Return(
-		responses.DeviceStatusResponse{Status: dtos.DeviceStatus{DeviceName: "any", OperatingState: string(models.UP)}}, nil)
+		responses.DeviceStatusResponse{Status: dtos.DeviceStatus{DeviceName: "any", OperatingState: string(contracts.UP)}}, nil)
 	mockClient.On("Update", mock.Anything, mock.Anything).Return(
 		common.BaseResponse{}, errors.NewCommonEdgeXWrapper(fmt.Errorf("update failed")))
 	return mockClient
@@ -53,7 +53,7 @@ func TestNewManagedDevice(t *testing.T) {
 
 	device = NewManagedDevice("any")
 	require.NotNil(t, device)
-	require.Equal(t, string(models.UP), device.Status)
+	require.Equal(t, string(contracts.UP), device.Status)
 }
 
 func TestReport(t *testing.T) {
@@ -65,11 +65,11 @@ func TestReport(t *testing.T) {
 	go device.ReportPeriodically()
 
 	// update device status to DOWN
-	device.Status = string(models.DOWN)
+	device.Status = string(contracts.DOWN)
 	device.ReportImmediately()
 
 	// update device status to UP
-	device.Status = string(models.UP)
+	device.Status = string(contracts.UP)
 	device.ReportImmediately()
 
 	// update device reason

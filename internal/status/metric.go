@@ -25,12 +25,12 @@ import (
 
 	"github.com/rcrowley/go-metrics"
 
-	http "github.com/volcengine/vei-driver-sdk-go/extension/clients"
+	"github.com/volcengine/vei-driver-sdk-go/extension/clients"
 	"github.com/volcengine/vei-driver-sdk-go/extension/dtos"
 	"github.com/volcengine/vei-driver-sdk-go/extension/interfaces"
 	"github.com/volcengine/vei-driver-sdk-go/extension/requests"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/models"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -86,7 +86,7 @@ func NewManagedDevice(deviceName string) *ManagedDevice {
 
 	resp, err := client.DeviceStatusByName(ctx, deviceName)
 	if err != nil {
-		log.D.Warnf("get device status for '%s' failed: %v", deviceName, err)
+		logger.D.Warnf("get device status for '%s' failed: %v", deviceName, err)
 	} else {
 		device.prev = resp.Status
 		device.Status = resp.Status.OperatingState
@@ -97,7 +97,7 @@ func NewManagedDevice(deviceName string) *ManagedDevice {
 }
 
 func (md *ManagedDevice) ReportPeriodically() {
-	ticker := time.NewTimer(time.Second * time.Duration(interval))
+	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	for {
 		select {
 		case <-md.ctx.Done():
@@ -129,10 +129,10 @@ func (md *ManagedDevice) report() {
 		md.prev.OperatingState = md.Status
 		request.OperatingState = &md.prev.OperatingState
 		changed = true
-		log.D.Infof("update device '%s' status to [%s] at %s", md.prev.DeviceName,
+		logger.D.Infof("update device '%s' status to [%s] at %s", md.prev.DeviceName,
 			md.prev.OperatingState, time.Now().Format(time.RFC3339))
 
-		if md.prev.OperatingState == string(models.UP) {
+		if md.prev.OperatingState == string(contracts.UP) {
 			md.UpTime = time.Now().UnixMilli()
 		} else {
 			md.DownTime = time.Now().UnixMilli()
@@ -171,8 +171,10 @@ func (md *ManagedDevice) report() {
 
 		now := time.Now()
 		seconds := now.Sub(md.last).Seconds()
-		md.last = now
-		md.Frequency.Update(float64(delta) / seconds)
+		if seconds > 0 {
+			md.last = now
+			md.Frequency.Update(float64(delta) / seconds)
+		}
 	}
 
 	if delta := md.DeltaFailures.Count(); delta > 0 {
@@ -194,6 +196,6 @@ func (md *ManagedDevice) report() {
 	}
 
 	if _, err := client.Update(context.Background(), requests.NewUpdateDeviceStatusRequest(request)); err != nil {
-		log.D.Warnf("update device '%s' status failed: %v", md.prev.DeviceName, err)
+		logger.D.Warnf("update device '%s' status failed: %v", md.prev.DeviceName, err)
 	}
 }
