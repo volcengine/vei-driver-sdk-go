@@ -44,11 +44,9 @@ func init() {
 	metadataPort := utils.GetIntEnv("CLIENTS_CORE_METADATA_PORT", 59881)
 	baseUrl := fmt.Sprintf("http://%s:%d", metadataHost, metadataPort)
 	client = http.NewDeviceStatusClient(baseUrl)
-	logger.D.Infof("[StatusManager] the base url of status client is '%s'", baseUrl)
 
 	interval = utils.GetIntEnv("DEVICE_STATUS_REPORT_INTERVAL", 30)
 	interval = utils.Ternary(interval < 10, 10, interval)
-	logger.D.Infof("[StatusManager] the reporting interval is %ds", interval)
 }
 
 type ManagedDevice struct {

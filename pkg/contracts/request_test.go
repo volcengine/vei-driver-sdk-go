@@ -23,7 +23,6 @@ import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/stretchr/testify/require"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/common"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -36,29 +35,29 @@ func MockCommandRequest(resourceName string, valueType string) models.CommandReq
 }
 
 func TestNewReadRequest(t *testing.T) {
-	resourceName, valueType := "temperature", common.Float32
+	resourceName, valueType := "temperature", Float32
 	cr := MockCommandRequest(resourceName, string(valueType))
 
 	req := NewReadRequest(cr)
-	require.Equal(t, common.DefaultModule, req.Module())
+	require.Equal(t, DefaultModule, req.Module())
 	require.Equal(t, resourceName, req.Resource())
 	require.Equal(t, valueType, req.ValueType())
 }
 
 func TestNewWriteRequest(t *testing.T) {
-	resourceName, valueType := "temperature", common.Float32
+	resourceName, valueType := "temperature", Float32
 	param := &models.CommandValue{}
 	cr := MockCommandRequest(resourceName, string(valueType))
 
 	req := NewWriteRequest(cr, param)
-	require.Equal(t, common.DefaultModule, req.Module())
+	require.Equal(t, DefaultModule, req.Module())
 	require.Equal(t, resourceName, req.Resource())
 	require.Equal(t, valueType, req.ValueType())
 	require.Equal(t, param, req.Param())
 }
 
 func TestNewCallRequest(t *testing.T) {
-	resourceName, valueType := "temperature", common.Float32
+	resourceName, valueType := "temperature", Float32
 	cr := MockCommandRequest(resourceName, string(valueType))
 
 	// invalid raw query
@@ -75,12 +74,12 @@ func TestNewCallRequest(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
-	resourceName, valueType := "temperature", common.Float32
+	resourceName, valueType := "temperature", Float32
 	cr := MockCommandRequest(resourceName, string(valueType))
 
 	req := newRequest(cr)
 	require.NotNil(t, req.Native())
-	require.Equal(t, common.DefaultModule, req.Module())
+	require.Equal(t, DefaultModule, req.Module())
 	require.Equal(t, resourceName, req.Resource())
 	require.Equal(t, valueType, req.ValueType())
 	require.NotNil(t, req.Attributes())

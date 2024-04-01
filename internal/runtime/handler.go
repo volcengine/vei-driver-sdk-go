@@ -24,7 +24,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/common"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
@@ -186,11 +185,11 @@ func GroupRequestByCategory(reqs []sdkmodels.CommandRequest) ([]contracts.ReadRe
 	)
 
 	for _, req := range reqs {
-		switch common.GetResourceCategory(req) {
-		case common.Property:
+		switch contracts.GetResourceCategory(req) {
+		case contracts.Property:
 			request := contracts.NewReadRequest(req)
 			read = append(read, request)
-		case common.Service:
+		case contracts.Service:
 			request, err := contracts.NewCallRequest(req)
 			if err != nil {
 				return nil, nil, err

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package common
+package contracts
 
 import (
 	"go/ast"
@@ -50,5 +50,26 @@ func TestValueType(t *testing.T) {
 				t.Errorf("the constant [%s] maybe inconsistent with edgex", name)
 			}
 		}
+	}
+}
+
+func TestValueType_String(t *testing.T) {
+	tests := []struct {
+		name string
+		t    ValueType
+	}{
+		{name: "Bool", t: Bool},
+		{name: "String", t: String},
+		{name: "Int32", t: Int32},
+		{name: "Float32", t: Float32},
+		{name: "Float64", t: Float64},
+		{name: "Object", t: Object},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.t.String(); got != tt.name {
+				t.Errorf("String() = %v, want %v", got, tt.name)
+			}
+		})
 	}
 }
