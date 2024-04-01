@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package common
+package contracts
 
 // ValueType indicates the type of reading value
 type ValueType string
@@ -47,3 +47,7 @@ const (
 	Float64Array ValueType = "Float64Array"
 	Object       ValueType = "Object"
 )
+
+func (t ValueType) String() string {
+	return string(t)
+}

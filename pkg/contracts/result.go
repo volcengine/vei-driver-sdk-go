@@ -21,7 +21,6 @@ import (
 
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/common"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -73,7 +72,7 @@ func (r *SimpleResult) Tags() map[string]string {
 }
 
 func (r *SimpleResult) CommandValue(resourceName string, valueType string) (*models.CommandValue, error) {
-	valueType = utils.Ternary(valueType == string(common.StringArray), string(common.Object), valueType)
+	valueType = utils.Ternary(valueType == string(StringArray), string(Object), valueType)
 	return models.NewCommandValueWithOrigin(resourceName, valueType, r.value, r.UnixNano())
 }
 

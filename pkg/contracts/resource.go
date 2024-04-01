@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package common
+package contracts
 
 import (
 	"fmt"
@@ -31,6 +31,10 @@ const (
 	Service  ResourceCategory = "service"
 	Event    ResourceCategory = "event"
 )
+
+func (c ResourceCategory) String() string {
+	return string(c)
+}
 
 const (
 	CategoryKey   = "category"

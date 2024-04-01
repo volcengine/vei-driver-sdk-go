@@ -19,7 +19,6 @@ package contracts
 import (
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/common"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -31,7 +30,7 @@ type BaseRequest interface {
 	// Resource returns the identifier of the thingmodel resource.
 	Resource() string
 	// ValueType returns the value type of the thingmodel resource.
-	ValueType() common.ValueType
+	ValueType() ValueType
 	// Attributes returns the attributes defined for the thingmodel resource.
 	Attributes() map[string]interface{}
 	// SetResult set the handle result of the request.
@@ -86,12 +85,12 @@ func NewCallRequest(req models.CommandRequest) (CallRequest, error) {
 }
 
 func newRequest(req models.CommandRequest) *request {
-	module, resource := common.SplitResourceName(req.DeviceResourceName)
+	module, resource := SplitResourceName(req.DeviceResourceName)
 	return &request{
 		native:     &req,
 		module:     module,
 		resource:   resource,
-		valueType:  common.ValueType(req.Type),
+		valueType:  ValueType(req.Type),
 		attributes: req.Attributes,
 	}
 }
@@ -100,7 +99,7 @@ type request struct {
 	native     *models.CommandRequest
 	module     string
 	resource   string
-	valueType  common.ValueType
+	valueType  ValueType
 	attributes map[string]interface{}
 	result     Result
 	error      error
@@ -121,7 +120,7 @@ func (r *request) Resource() string {
 	return r.resource
 }
 
-func (r *request) ValueType() common.ValueType {
+func (r *request) ValueType() ValueType {
 	return r.valueType
 }
 

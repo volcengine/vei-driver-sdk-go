@@ -14,13 +14,31 @@
  * limitations under the License.
  */
 
-package common
+package contracts
 
 import (
 	"testing"
 
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
+
+func TestResourceCategory_String(t *testing.T) {
+	tests := []struct {
+		name string
+		c    ResourceCategory
+	}{
+		{name: "property", c: Property},
+		{name: "service", c: Service},
+		{name: "event", c: Event},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := tt.c.String(); got != tt.name {
+				t.Errorf("String() = %v, want %v", got, tt.name)
+			}
+		})
+	}
+}
 
 func TestGetResourceCategory(t *testing.T) {
 	type args struct {

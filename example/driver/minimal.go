@@ -23,7 +23,6 @@ import (
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/common"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
@@ -46,13 +45,13 @@ func (m *MinimalDriver) ReadProperty(device *contracts.Device, reqs []contracts.
 	for _, req := range reqs {
 		m.logger.Infof("%v %v %v %v", req.Module(), req.Resource(), req.ValueType(), req.Attributes())
 		switch req.ValueType() {
-		case common.Int32:
+		case contracts.Int32:
 			req.SetResult(contracts.NewSimpleResult(int32(rand.Intn(100))))
-		case common.Float32:
+		case contracts.Float32:
 			req.SetResult(contracts.NewSimpleResult(float32(rand.Intn(100))))
-		case common.Bool:
+		case contracts.Bool:
 			req.SetResult(contracts.NewSimpleResult(true))
-		case common.String:
+		case contracts.String:
 			req.SetResult(contracts.NewSimpleResult("this is a test message"))
 		default:
 			req.Failed(errors.NewCommonEdgeX(errors.KindServerError, "unsupported value type", nil))
