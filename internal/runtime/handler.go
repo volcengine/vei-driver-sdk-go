@@ -24,56 +24,99 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/resource"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
 func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties,
 	reqs []sdkmodels.CommandRequest) ([]*sdkmodels.CommandValue, error) {
 
 	responses := make([]*sdkmodels.CommandValue, 0)
-	properties, services, _ := GroupByCategory(reqs)
+	readRequests, callRequests, err := GroupRequestByCategory(reqs)
+	if err != nil {
+		a.log.Errorf("group requests by category failed: %v", err)
+		return nil, err
+	}
 
-	if len(properties) > 0 {
-		result, err := a.driver.HandleReadCommands(deviceName, protocols, properties)
-		if err != nil {
-			a.StatusManager.OnHandleCommandsFailed(deviceName)
+	device := contracts.WrapDevice(deviceName, protocols)
+
+	if len(readRequests) > 0 {
+		if err = a.driver.ReadProperty(device, readRequests); err != nil {
+			a.PostProcessDevice(device)
+			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
-		responses = append(responses, result...)
-	}
-
-	for _, srv := range services {
-		data, edgexErr := utils.ParametersFromURLRawQuery(srv)
-		if edgexErr != nil {
-			return nil, edgexErr
+		if err = PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, readRequests, &responses); err != nil {
+			return responses, err
 		}
-		result, err := a.driver.HandleServiceCall(deviceName, protocols, srv, data)
-		if err != nil {
-			a.StatusManager.OnHandleCommandsFailed(deviceName)
+	}
+	if len(callRequests) > 0 {
+		if err = a.driver.CallService(device, callRequests); err != nil {
+			a.PostProcessDevice(device)
+			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
-		responses = append(responses, result)
+		if err = PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, callRequests, &responses); err != nil {
+			return responses, err
+		}
 	}
 
-	if len(responses) == 0 {
-		a.StatusManager.OnHandleCommandsFailed(deviceName)
-		return nil, errors.NewCommonEdgeX(errors.KindServerError, "empty responses", nil)
-	}
-
-	a.StatusManager.OnHandleCommandsSuccessfully(deviceName)
 	return responses, nil
 }
 
 func (a *Agent) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties,
-	reqs []sdkmodels.CommandRequest, params []*sdkmodels.CommandValue) error {
-	err := a.driver.HandleWriteCommands(deviceName, protocols, reqs, params)
-	if err != nil {
-		a.StatusManager.OnHandleCommandsFailed(deviceName)
-	} else {
-		a.StatusManager.OnHandleCommandsSuccessfully(deviceName)
+	reqs []sdkmodels.CommandRequest, params []*sdkmodels.CommandValue) (err error) {
+
+	if len(reqs) == 0 {
+		return errors.NewCommonEdgeX(errors.KindServerError, "unexpected empty write request", nil)
 	}
-	return err
+	if len(reqs) != len(params) {
+		return errors.NewCommonEdgeX(errors.KindServerError, "the length of requests and params is not match", nil)
+	}
+
+	device := contracts.WrapDevice(deviceName, protocols)
+	requests := make([]contracts.WriteRequest, len(reqs))
+	for i := 0; i < len(reqs); i++ {
+		requests[i] = contracts.NewWriteRequest(reqs[i], params[i])
+	}
+
+	if err = a.driver.WriteProperty(device, requests); err != nil {
+		a.PostProcessDevice(device)
+		a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
+		return err
+	}
+
+	return PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, requests, nil)
+}
+
+func PostProcessRequests[R contracts.BaseRequest](manager interfaces.StatusManager, strict bool,
+	deviceName string, requests []R, cvs *[]*sdkmodels.CommandValue) error {
+	for _, req := range requests {
+		if req.Skipped() {
+			continue
+		}
+		if err := req.Error(); err != nil {
+			manager.OnHandleCommandsFailed(deviceName, 1)
+			if strict {
+				return err
+			}
+		} else {
+			manager.OnHandleCommandsSuccessfully(deviceName, 1)
+		}
+		if result := req.Result(); result != nil && cvs != nil {
+			cv, err := result.CommandValue(req.Native().DeviceResourceName, req.Native().Type)
+			if err != nil {
+				return err
+			}
+			*cvs = append(*cvs, cv)
+		}
+	}
+	return nil
+}
+
+func (a *Agent) ReportEvent(event *contracts.AsyncValues) error {
+	a.async <- event
+	return nil
 }
 
 func (a *Agent) HandleAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
@@ -88,48 +131,72 @@ func (a *Agent) HandleAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 			a.log.Infof("Stop handle async results...")
 			return
 		case result := <-a.async:
-			a.StatusManager.OnHandleCommandsSuccessfully(result.DeviceName)
-			a.asyncCh <- result
+			a.StatusManager.OnHandleCommandsSuccessfully(result.DeviceName, int64(len(result.CommandValues)))
+			a.asyncCh <- result.Transform()
 		}
 	}
 }
 
-func (a *Agent) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	a.log.Infof("[AddDevice]: device '%s' is added", deviceName)
+func (a *Agent) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, _ models.AdminState) error {
+	a.log.Infof("device '%s' is added", deviceName)
 	a.StatusManager.OnAddDevice(deviceName)
 	if a.handler == nil {
 		return nil
 	}
-	return a.handler.AddDevice(deviceName, protocols)
+	// Call the interface 'AddDevice' if the driver has implemented the handler.
+	device := contracts.WrapDevice(deviceName, protocols)
+	defer a.PostProcessDevice(device)
+	return a.handler.AddDevice(device)
 }
 
-func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {
-	a.log.Infof("[UpdateDevice]: device '%s' is updated", deviceName)
+func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, _ models.AdminState) error {
+	a.log.Infof("device '%s' is updated", deviceName)
 	if a.handler == nil {
 		return nil
 	}
-	return a.handler.UpdateDevice(deviceName, protocols)
+	// Call the interface 'UpdateDevice' if the driver has implemented the handler.
+	device := contracts.WrapDevice(deviceName, protocols)
+	defer a.PostProcessDevice(device)
+	return a.handler.UpdateDevice(device)
 }
 
 func (a *Agent) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
-	a.log.Infof("[RemoveDevice]: device '%s' is removed", deviceName)
+	a.log.Infof("device '%s' is removed", deviceName)
 	a.StatusManager.OnRemoveDevice(deviceName)
 	if a.handler == nil {
 		return nil
 	}
-	return a.handler.RemoveDevice(deviceName, protocols)
+	// Call the interface 'RemoveDevice' if the driver has implemented the handler.
+	device := contracts.WrapDevice(deviceName, protocols)
+	return a.handler.RemoveDevice(device)
 }
 
-func GroupByCategory(reqs []sdkmodels.CommandRequest) (properties, services, events []sdkmodels.CommandRequest) {
+func (a *Agent) PostProcessDevice(device *contracts.Device) {
+	if device.OperatingState == "" {
+		return
+	}
+	a.StatusManager.UpdateDeviceStatus(device.Name, string(device.OperatingState), device.Message)
+}
+
+func GroupRequestByCategory(reqs []sdkmodels.CommandRequest) ([]contracts.ReadRequest, []contracts.CallRequest, error) {
+	var (
+		read []contracts.ReadRequest
+		call []contracts.CallRequest
+	)
+
 	for _, req := range reqs {
-		switch resource.GetCategory(req) {
-		case resource.Property:
-			properties = append(properties, req)
-		case resource.Service:
-			services = append(services, req)
-		case resource.Event:
-			events = append(events, req)
+		switch contracts.GetResourceCategory(req) {
+		case contracts.Property:
+			request := contracts.NewReadRequest(req)
+			read = append(read, request)
+		case contracts.Service:
+			request, err := contracts.NewCallRequest(req)
+			if err != nil {
+				return nil, nil, err
+			}
+			call = append(call, request)
 		}
 	}
-	return properties, services, events
+
+	return read, call, nil
 }

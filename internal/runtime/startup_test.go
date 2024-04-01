@@ -14,28 +14,10 @@
  * limitations under the License.
  */
 
-package resource
+package runtime
 
 import (
-	"strings"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-const (
-	DefaultModule = "default"
-	Separator     = ":"
-)
-
-func CompatibleName(module string, function string) string {
-	if module == DefaultModule {
-		return function
-	}
-	return strings.Join([]string{module, function}, Separator)
-}
-
-func SplitName(name string) (module string, function string) {
-	ss := strings.Split(name, Separator)
-	if len(ss) == 2 {
-		return ss[0], ss[1]
-	}
-	return DefaultModule, ss[0]
-}
+var _ models.ProtocolDriver = (*Agent)(nil)

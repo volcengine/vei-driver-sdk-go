@@ -21,62 +21,50 @@ import (
 	"fmt"
 	"math/rand"
 
-	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 )
 
 type MinimalDriver struct {
-	lc       logger.LoggingClient
-	asyncCh  chan<- *sdkmodels.AsyncValues
-	reporter interfaces.EventReporter
+	logger  logger.Logger
+	asyncCh chan<- *contracts.AsyncValues
 }
 
 var _ interfaces.Driver = (*MinimalDriver)(nil)
 
-func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, eventReporter interfaces.EventReporter) error {
-	m.lc = lc
+func (m *MinimalDriver) Initialize(logger logger.Logger, asyncCh chan<- *contracts.AsyncValues) error {
+	m.logger = logger
 	m.asyncCh = asyncCh
-	m.reporter = eventReporter
 	return nil
 }
 
-func (m *MinimalDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkmodels.CommandRequest) ([]*sdkmodels.CommandValue, error) {
-	result := make([]*sdkmodels.CommandValue, len(reqs))
-	for i, req := range reqs {
-		var cv *sdkmodels.CommandValue
-		var err error
-		switch req.Type {
-		case common.ValueTypeInt32:
-			cv, err = sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeInt32, rand.Int())
-		case common.ValueTypeFloat32:
-			cv, err = sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeFloat32, rand.Int())
-		case common.ValueTypeBool:
-			cv, err = sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeBool, true)
-		case common.ValueTypeString:
-			cv, err = sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeString, "this is a test message")
+func (m *MinimalDriver) ReadProperty(device *contracts.Device, reqs []contracts.ReadRequest) error {
+	for _, req := range reqs {
+		m.logger.Infof("%v %v %v %v", req.Module(), req.Resource(), req.ValueType(), req.Attributes())
+		switch req.ValueType() {
+		case contracts.Int32:
+			req.SetResult(contracts.NewSimpleResult(int32(rand.Intn(100))))
+		case contracts.Float32:
+			req.SetResult(contracts.NewSimpleResult(float32(rand.Intn(100))))
+		case contracts.Bool:
+			req.SetResult(contracts.NewSimpleResult(true))
+		case contracts.String:
+			req.SetResult(contracts.NewSimpleResult("this is a test message"))
 		default:
-			return nil, errors.NewCommonEdgeX(errors.KindServerError, "unsupported value type", nil)
-		}
-		if err != nil {
-			return result, errors.NewCommonEdgeX(errors.KindServerError, fmt.Sprintf("failed to get %s value ", req.DeviceResourceName), err)
-		} else {
-			result[i] = cv
+			req.Failed(errors.NewCommonEdgeX(errors.KindServerError, "unsupported value type", nil))
 		}
 	}
-
-	return result, nil
-}
-
-func (m *MinimalDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkmodels.CommandRequest, params []*sdkmodels.CommandValue) error {
 	return nil
 }
 
-func (m *MinimalDriver) HandleServiceCall(deviceName string, protocols map[string]models.ProtocolProperties, req sdkmodels.CommandRequest, data []byte) (*sdkmodels.CommandValue, error) {
+func (m *MinimalDriver) WriteProperty(device *contracts.Device, reqs []contracts.WriteRequest) error {
+	return nil
+}
+
+func (m *MinimalDriver) CallService(device *contracts.Device, reqs []contracts.CallRequest) error {
 	type Request struct {
 		X float32 `json:"x"`
 		Y float32 `json:"y"`
@@ -86,28 +74,32 @@ func (m *MinimalDriver) HandleServiceCall(deviceName string, protocols map[strin
 		Result float32 `json:"result"`
 	}
 
-	request, response := &Request{}, &Response{}
-	if err := json.Unmarshal(data, request); err != nil {
-		return nil, err
-	}
-
-	switch req.DeviceResourceName {
-	case "Add":
-		response.Result = request.X + request.Y
-	case "Sub":
-		response.Result = request.X - request.Y
-	case "Multiply":
-		response.Result = request.X * request.Y
-	case "Divide":
-		if request.Y == 0 {
-			return nil, fmt.Errorf("the divisor cannot be 0")
+	for _, req := range reqs {
+		request, response := &Request{}, &Response{}
+		if err := json.Unmarshal(req.Payload(), request); err != nil {
+			req.Failed(err)
 		}
-		response.Result = request.X / request.Y
-	default:
-		return nil, fmt.Errorf("unsupported service: %s", req.DeviceResourceName)
+
+		switch req.Resource() {
+		case "Add":
+			response.Result = request.X + request.Y
+		case "Sub":
+			response.Result = request.X - request.Y
+		case "Multiply":
+			response.Result = request.X * request.Y
+		case "Divide":
+			if request.Y == 0 {
+				req.Failed(fmt.Errorf("the divisor cannot be 0"))
+			}
+			response.Result = request.X / request.Y
+		default:
+			req.Failed(fmt.Errorf("unsupported service: %s", req.Resource()))
+		}
+
+		req.SetResult(contracts.NewSimpleResult(response))
 	}
 
-	return sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeObject, response)
+	return nil
 }
 
 func (m *MinimalDriver) Stop(force bool) error {

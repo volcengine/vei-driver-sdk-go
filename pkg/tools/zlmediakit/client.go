@@ -8,7 +8,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/http/utils"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 )
 
 type MediaServerClientInterface interface {
@@ -23,12 +23,12 @@ const (
 type Client struct {
 	baseURL string
 	secret  string
-	lc      logger.LoggingClient
+	lc      logger.Logger
 	ctx     context.Context
 }
 
 // NewClient creates an instance of zlmdiakit client
-func NewClient(baseURL string, secret string, lc logger.LoggingClient) (MediaServerClientInterface, error) {
+func NewClient(baseURL string, secret string, lc logger.Logger) (MediaServerClientInterface, error) {
 	parsedURL, err := url.ParseRequestURI(baseURL)
 	if err != nil {
 		lc.Errorf("parse url %s failed: %v", baseURL, err)

@@ -14,12 +14,14 @@
  * limitations under the License.
  */
 
-package log
+package logger
 
 import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
 var C logger.LoggingClient
@@ -71,5 +73,6 @@ func (c *CompatLogger) Error(msg string, args ...interface{}) {
 }
 
 func init() {
-	C = NewCompatLogger(LoggerConfig{LogLevel: logrus.InfoLevel})
+	level := utils.GetIntEnv("LOG_LEVEL", int64(logrus.InfoLevel))
+	C = NewCompatLogger(LoggerConfig{LogLevel: logrus.Level(level)})
 }

@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 )
 
 const (
@@ -38,10 +38,10 @@ func SetDefaultLogLevel(writer http.ResponseWriter, request *http.Request) {
 		_, _ = writer.Write([]byte(fmt.Sprintf("failed to update default log level: %v\n", err)))
 		return
 	}
-	log.D.SetLevel(level)
-	_ = log.C.SetLogLevel(level.String())
+	logger.D.SetLevel(level)
+	_ = logger.C.SetLogLevel(level.String())
 	writer.WriteHeader(http.StatusOK)
 	_, _ = writer.Write([]byte("success"))
-	log.D.Infof("update default log level to '%s'", level.String())
+	logger.D.Infof("update default log level to '%s'", level.String())
 	return
 }

@@ -18,8 +18,34 @@ package vei
 
 import (
 	"github.com/volcengine/vei-driver-sdk-go/internal/runtime"
+	"github.com/volcengine/vei-driver-sdk-go/internal/status"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
 func Bootstrap(name string, version string, driver interface{}, opts ...runtime.Option) {
 	runtime.Startup(name, version, driver, opts...)
+}
+
+func WithConsecutiveErrorStatusManager(threshold int64) runtime.Option {
+	return func(agent *runtime.Agent) {
+		agent.OfflineDecision = status.NewOfflineDecision(status.ExceedConsecutiveErrorNum, threshold)
+	}
+}
+
+func WithContinuousErrorStatusManager(threshold int64) runtime.Option {
+	return func(agent *runtime.Agent) {
+		agent.OfflineDecision = status.NewOfflineDecision(status.ExceedContinuousErrorDuration, threshold)
+	}
+}
+
+func WithStatusManager(manager interfaces.StatusManager) runtime.Option {
+	return func(agent *runtime.Agent) {
+		agent.StatusManager = manager
+	}
+}
+
+func WithStrictMode(strict bool) runtime.Option {
+	return func(agent *runtime.Agent) {
+		agent.StrictMode = strict
+	}
 }
