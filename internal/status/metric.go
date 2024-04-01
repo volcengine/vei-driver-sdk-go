@@ -42,10 +42,13 @@ var (
 func init() {
 	metadataHost := os.Getenv("CLIENTS_CORE_METADATA_HOST")
 	metadataPort := utils.GetIntEnv("CLIENTS_CORE_METADATA_PORT", 59881)
-	client = http.NewDeviceStatusClient(fmt.Sprintf("http://%s:%d", metadataHost, metadataPort))
+	baseUrl := fmt.Sprintf("http://%s:%d", metadataHost, metadataPort)
+	client = http.NewDeviceStatusClient(baseUrl)
+	logger.D.Infof("[StatusManager] the base url of status client is '%s'", baseUrl)
 
 	interval = utils.GetIntEnv("DEVICE_STATUS_REPORT_INTERVAL", 30)
 	interval = utils.Ternary(interval < 10, 10, interval)
+	logger.D.Infof("[StatusManager] the reporting interval is %ds", interval)
 }
 
 type ManagedDevice struct {
@@ -86,17 +89,19 @@ func NewManagedDevice(deviceName string) *ManagedDevice {
 
 	resp, err := client.DeviceStatusByName(ctx, deviceName)
 	if err != nil {
-		logger.D.Warnf("get device status for '%s' failed: %v", deviceName, err)
+		logger.D.Warnf("[StatusManager] get device status for '%s' failed: %v", deviceName, err)
 	} else {
 		device.prev = resp.Status
 		device.Status = resp.Status.OperatingState
 		device.Reason = resp.Status.Reason
+		logger.D.Debugf("[StatusManager] new managed device for '%s' with status %v", deviceName, device.Status)
 	}
 
 	return device
 }
 
 func (md *ManagedDevice) ReportPeriodically() {
+	logger.D.Debugf("[StatusManager] device %s report status periodically", md.prev.DeviceName)
 	ticker := time.NewTicker(time.Second * time.Duration(interval))
 	for {
 		select {
@@ -111,10 +116,12 @@ func (md *ManagedDevice) ReportPeriodically() {
 }
 
 func (md *ManagedDevice) ReportImmediately() {
+	logger.D.Debugf("[StatusManager] device %s report status immediately", md.prev.DeviceName)
 	md.flush <- true
 }
 
 func (md *ManagedDevice) Stop() {
+	logger.D.Debugf("[StatusManager] device %s stop reporting status", md.prev.DeviceName)
 	md.stop()
 }
 
@@ -129,7 +136,7 @@ func (md *ManagedDevice) report() {
 		md.prev.OperatingState = md.Status
 		request.OperatingState = &md.prev.OperatingState
 		changed = true
-		logger.D.Infof("update device '%s' status to [%s] at %s", md.prev.DeviceName,
+		logger.D.Infof("[StatusManager] update device '%s' status to [%s] at %s", md.prev.DeviceName,
 			md.prev.OperatingState, time.Now().Format(time.RFC3339))
 
 		if md.prev.OperatingState == string(contracts.UP) {
@@ -196,6 +203,6 @@ func (md *ManagedDevice) report() {
 	}
 
 	if _, err := client.Update(context.Background(), requests.NewUpdateDeviceStatusRequest(request)); err != nil {
-		logger.D.Warnf("update device '%s' status failed: %v", md.prev.DeviceName, err)
+		logger.D.Warnf("[StatusManager] update device '%s' status failed: %v", md.prev.DeviceName, err)
 	}
 }

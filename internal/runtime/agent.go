@@ -39,6 +39,7 @@ type Agent struct {
 	handler   interfaces.DeviceHandler
 	discovery interfaces.Discovery
 	debugger  interfaces.Debugger
+	reporter  interfaces.Reporter
 	service   sdkinterfaces.DeviceServiceSDK
 	asyncCh   chan<- *sdkmodels.AsyncValues // used by agent
 	deviceCh  chan<- []sdkmodels.DiscoveredDevice
@@ -65,6 +66,7 @@ func (a *Agent) Initialize(_ lc.LoggingClient, asyncCh chan<- *sdkmodels.AsyncVa
 	a.asyncCh = asyncCh
 	a.deviceCh = deviceCh
 	a.service = service.RunningService()
+	a.reporter = a
 
 	a.ctx, a.stop = context.WithCancel(context.Background())
 	a.wg = &sync.WaitGroup{}

@@ -59,3 +59,7 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 func StatusManager() interfaces.StatusManager {
 	return agent.StatusManager
 }
+
+func Reporter() interfaces.Reporter {
+	return agent.reporter
+}

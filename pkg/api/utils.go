@@ -23,6 +23,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/runtime"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 )
 
 // AddRoute allows leveraging the existing internal web server to add routes specific to Device Service.
@@ -37,8 +38,8 @@ func GetLoggingClient() logger.LoggingClient {
 }
 
 // SetDeviceOffline will call the SetDeviceOffline interface impl by the status manager
-func SetDeviceOffline(deviceName string) {
-	runtime.StatusManager().SetDeviceOffline(deviceName)
+func SetDeviceOffline(deviceName string, reason string) {
+	runtime.StatusManager().SetDeviceOffline(deviceName, reason)
 }
 
 // SetDeviceOnline will call the SetDeviceOnline interface impl by the status manager
@@ -46,3 +47,6 @@ func SetDeviceOnline(deviceName string) {
 	runtime.StatusManager().SetDeviceOnline(deviceName)
 }
 
+func ReportEvent(event *contracts.AsyncValues) error {
+	return runtime.Reporter().ReportEvent(event)
+}

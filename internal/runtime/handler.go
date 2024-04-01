@@ -115,6 +115,11 @@ func PostProcessRequests[R contracts.BaseRequest](manager interfaces.StatusManag
 	return nil
 }
 
+func (a *Agent) ReportEvent(event *contracts.AsyncValues) error {
+	a.async <- event
+	return nil
+}
+
 func (a *Agent) HandleAsyncResults(ctx context.Context, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
