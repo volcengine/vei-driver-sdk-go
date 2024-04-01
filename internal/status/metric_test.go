@@ -17,46 +17,75 @@
 package status
 
 import (
-	"errors"
-	"reflect"
+	"fmt"
 	"testing"
+	"time"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces"
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/rcrowley/go-metrics"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
+	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
+	"github.com/volcengine/vei-driver-sdk-go/extension/dtos"
+	"github.com/volcengine/vei-driver-sdk-go/extension/interfaces"
+	"github.com/volcengine/vei-driver-sdk-go/extension/interfaces/mocks"
+	"github.com/volcengine/vei-driver-sdk-go/extension/responses"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 )
 
-func TestNewManagedDevice(t *testing.T) {
-	mockDeviceService := &mocks.DeviceServiceSDK{}
-	mockDeviceService.On("GetLoggingClient").Return(logger.NewMockClient())
-	mockDeviceService.On("GetDeviceByName", "not-found").Return(models.Device{}, errors.New("device not found"))
-	mockDeviceService.On("GetDeviceByName", "invalid-label").Return(models.Device{Labels: []string{LabelPrefix + "..."}}, nil)
-	mockDeviceService.On("GetDeviceByName", "online").Return(models.Device{Labels: []string{LabelPrefix + `{"status":"Online"}`}}, nil)
-	mockDeviceService.On("GetDeviceByName", "offline").Return(models.Device{Labels: []string{LabelPrefix + `{"status":"Offline"}`}}, nil)
+func MockDeviceStatusClient() interfaces.DeviceStatusClient {
+	mockClient := &mocks.DeviceStatusClient{}
+	mockClient.On("DeviceStatusByName", mock.Anything, "device1").Return(
+		responses.DeviceStatusResponse{}, errors.NewCommonEdgeXWrapper(fmt.Errorf("status not found")))
+	mockClient.On("DeviceStatusByName", mock.Anything, mock.Anything).Return(
+		responses.DeviceStatusResponse{Status: dtos.DeviceStatus{DeviceName: "any", OperatingState: string(contracts.UP)}}, nil)
+	mockClient.On("Update", mock.Anything, mock.Anything).Return(
+		common.BaseResponse{}, errors.NewCommonEdgeXWrapper(fmt.Errorf("update failed")))
+	return mockClient
+}
 
-	type args struct {
-		deviceName string
-		ds         interfaces.DeviceServiceSDK
-	}
-	tests := []struct {
-		name string
-		args args
-		want *ManagedDevice
-	}{
-		{name: "not-found", args: args{deviceName: "not-found", ds: mockDeviceService}, want: &ManagedDevice{Name: "not-found", Status: Unknown, ConsecutiveErrorNum: metrics.NewCounter()}},
-		{name: "unknown", args: args{deviceName: "invalid-label", ds: mockDeviceService}, want: &ManagedDevice{Name: "invalid-label", Status: Unknown, ConsecutiveErrorNum: metrics.NewCounter()}},
-		{name: "online", args: args{deviceName: "online", ds: mockDeviceService}, want: &ManagedDevice{Name: "online", Status: Online, ConsecutiveErrorNum: metrics.NewCounter()}},
-		{name: "offline", args: args{deviceName: "offline", ds: mockDeviceService}, want: &ManagedDevice{Name: "offline", Status: Offline, ConsecutiveErrorNum: metrics.NewCounter()}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := NewManagedDevice(tt.args.deviceName, tt.args.ds)
-			t.Logf("%+v", got)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewManagedDevice() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+func TestNewManagedDevice(t *testing.T) {
+	client = MockDeviceStatusClient()
+
+	device := NewManagedDevice("device1")
+	require.NotNil(t, device)
+	require.Empty(t, device.Status)
+
+	device = NewManagedDevice("any")
+	require.NotNil(t, device)
+	require.Equal(t, string(contracts.UP), device.Status)
+}
+
+func TestReport(t *testing.T) {
+	client = MockDeviceStatusClient()
+	interval = 3
+
+	device := NewManagedDevice("any")
+
+	go device.ReportPeriodically()
+
+	// update device status to DOWN
+	device.Status = string(contracts.DOWN)
+	device.ReportImmediately()
+
+	// update device status to UP
+	device.Status = string(contracts.UP)
+	device.ReportImmediately()
+
+	// update device reason
+	device.Reason = "PASSWORD ERROR"
+	device.ReportImmediately()
+
+	// collected inc
+	device.DeltaCollected.Inc(10)
+	device.LastReportedTime = time.Now().UnixMilli()
+	device.ReportImmediately()
+
+	// failures inc
+	device.DeltaFailures.Inc(10)
+	device.ReportImmediately()
+
+	// wait for ticker trigger
+	time.Sleep(time.Second * time.Duration(interval+1))
+	device.Stop()
 }

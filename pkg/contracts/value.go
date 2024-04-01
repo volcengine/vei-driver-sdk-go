@@ -14,13 +14,23 @@
  * limitations under the License.
  */
 
-package interfaces
+package contracts
 
 import (
-	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 )
 
-// Reporter is the interface to report device events
-type Reporter interface {
-	ReportEvent(event *contracts.AsyncValues) error
+// AsyncValues is the struct for sending Device readings asynchronously via ProtocolDrivers
+type AsyncValues struct {
+	DeviceName    string
+	SourceName    string
+	CommandValues []*models.CommandValue
+}
+
+func (v *AsyncValues) Transform() *models.AsyncValues {
+	return &models.AsyncValues{
+		DeviceName:    v.DeviceName,
+		SourceName:    v.SourceName,
+		CommandValues: v.CommandValues,
+	}
 }

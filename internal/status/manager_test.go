@@ -17,64 +17,51 @@
 package status
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/edgexfoundry/device-sdk-go/v2/pkg/interfaces/mocks"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/clients/logger"
-	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
+)
+
+var (
+	_ interfaces.StatusManager = (*Manager)(nil)
 )
 
 func TestDefaultManager(t *testing.T) {
-	mockDeviceService := &mocks.DeviceServiceSDK{}
-	mockDeviceService.On("GetLoggingClient").Return(logger.NewMockClient())
-
-	_, manager := Default(mockDeviceService)
+	_, manager := Default(nil)
 	require.NotNil(t, manager)
 	require.Equal(t, ExceedConsecutiveErrorNum, manager.decision.policy)
 	require.Equal(t, int64(10), manager.decision.threshold)
 }
 
 func TestExceedConsecutiveErrorNum(t *testing.T) {
-	mockDevice := models.Device{Name: "test_device"}
-	mockDeviceService := &mocks.DeviceServiceSDK{}
-	mockDeviceService.On("GetLoggingClient").Return(logger.NewMockClient())
-	mockDeviceService.On("GetDeviceByName", mockDevice.Name).Return(mockDevice, nil)
-	mockDeviceService.On("GetDeviceByName", mock.Anything).Return(models.Device{}, errors.New("device not found"))
-	mockDeviceService.On("UpdateDevice", mock.Anything).Return(
-		func(device models.Device) error {
-			mockDevice.Labels = device.Labels
-			return nil
-		},
-	)
+	_, manager := Default(nil)
+	require.NotNil(t, manager)
 
-	manager, err := NewManager(OfflineDecision{ExceedConsecutiveErrorNum, 0}, mockDeviceService)
-	require.Error(t, err)
+	deviceName := "device1"
+	manager.OnAddDevice(deviceName)
 
-	threshold := 5
-	manager, err = NewManager(OfflineDecision{ExceedConsecutiveErrorNum, int64(threshold)}, mockDeviceService)
-	require.NoError(t, err)
+	manager.OnHandleCommandsSuccessfully(deviceName, 10)
+	device := manager.getManagedDevice(deviceName)
+	require.Equal(t, string(contracts.UP), device.Status)
 
-	manager.OnAddDevice(mockDevice.Name)
-	manager.OnHandleCommandsSuccessfully(mockDevice.Name)
-	require.Greater(t, len(mockDevice.Labels), 0)
-	require.Contains(t, mockDevice.Labels[0], Online, mockDevice.Labels)
+	manager.OnHandleCommandsFailed(deviceName, 20)
+	device = manager.getManagedDevice(deviceName)
+	require.Equal(t, string(contracts.DOWN), device.Status)
 
-	for i := 0; i <= threshold; i++ {
-		manager.OnHandleCommandsFailed(mockDevice.Name)
-	}
-	require.Greater(t, len(mockDevice.Labels), 0)
-	require.Contains(t, mockDevice.Labels[0], Offline, mockDevice.Labels)
+	manager.SetDeviceOnline(deviceName)
+	device = manager.getManagedDevice(deviceName)
+	require.Equal(t, string(contracts.UP), device.Status)
 
-	manager.OnHandleCommandsSuccessfully(mockDevice.Name)
-	require.Greater(t, len(mockDevice.Labels), 0)
-	require.Contains(t, mockDevice.Labels[0], Online, mockDevice.Labels)
+	manager.SetDeviceOffline(deviceName, "")
+	device = manager.getManagedDevice(deviceName)
+	require.Equal(t, string(contracts.DOWN), device.Status)
 
-	manager.SetDeviceOffline(mockDevice.Name)
-	require.Greater(t, len(mockDevice.Labels), 0)
-	require.Contains(t, mockDevice.Labels[0], Offline, mockDevice.Labels)
+	manager.UpdateDeviceStatus(deviceName, string(contracts.UNREACHABLE), "")
+	device = manager.getManagedDevice(deviceName)
+	require.Equal(t, string(contracts.UNREACHABLE), device.Status)
 
-	manager.OnRemoveDevice(mockDevice.Name)
+	manager.OnRemoveDevice(deviceName)
 }

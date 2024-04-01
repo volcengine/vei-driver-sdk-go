@@ -20,16 +20,12 @@ import (
 	"fmt"
 	"os"
 
-	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
 	"github.com/edgexfoundry/device-sdk-go/v2/pkg/startup"
 
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
 var agent *Agent
-var _ sdkmodels.ProtocolDriver = (*Agent)(nil)
-var _ sdkmodels.ProtocolDiscovery = (*Agent)(nil)
-var _ interfaces.EventReporter = (*Agent)(nil)
 
 type Option func(agent *Agent)
 
@@ -43,7 +39,7 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 	if driver, ok := proto.(interfaces.Driver); ok {
 		agent.driver = driver
 	} else {
-		_, _ = fmt.Fprintf(os.Stderr, "Please implement the driver interface ")
+		_, _ = fmt.Fprintf(os.Stderr, "Please implement the driver interface\n")
 		os.Exit(1)
 	}
 
@@ -60,6 +56,10 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 	startup.Bootstrap(agent.name, agent.version, agent)
 }
 
-func StatusManager() interfaces.Manager {
+func StatusManager() interfaces.StatusManager {
 	return agent.StatusManager
+}
+
+func Reporter() interfaces.Reporter {
+	return agent.reporter
 }

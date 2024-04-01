@@ -14,15 +14,16 @@
  * limitations under the License.
  */
 
-package log
+package logger
 
 import (
 	"io"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log/format"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/log/writer"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger/format"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/logger/writer"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
 type Logger interface {
@@ -75,5 +76,6 @@ func NewLogger(cfg LoggerConfig) Logger {
 }
 
 func init() {
-	D = NewLogger(LoggerConfig{LogLevel: logrus.InfoLevel})
+	level := utils.GetIntEnv("LOG_LEVEL", int64(logrus.InfoLevel))
+	D = NewLogger(LoggerConfig{LogLevel: logrus.Level(level)})
 }
