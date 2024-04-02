@@ -18,6 +18,7 @@ package runtime
 
 import (
 	"context"
+	"reflect"
 	"sync"
 
 	sdkmodels "github.com/edgexfoundry/device-sdk-go/v2/pkg/models"
@@ -25,7 +26,6 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 )
 
 func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties,
@@ -46,7 +46,7 @@ func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]model
 			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
-		if err = PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, readRequests, &responses); err != nil {
+		if err = a.PostProcessRequests(deviceName, readRequests, false, &responses); err != nil {
 			return responses, err
 		}
 	}
@@ -56,7 +56,7 @@ func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]model
 			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
-		if err = PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, callRequests, &responses); err != nil {
+		if err = a.PostProcessRequests(deviceName, callRequests, false, &responses); err != nil {
 			return responses, err
 		}
 	}
@@ -86,22 +86,27 @@ func (a *Agent) HandleWriteCommands(deviceName string, protocols map[string]mode
 		return err
 	}
 
-	return PostProcessRequests(a.StatusManager, a.StrictMode, deviceName, requests, nil)
+	return a.PostProcessRequests(deviceName, requests, true, nil)
 }
 
-func PostProcessRequests[R contracts.BaseRequest](manager interfaces.StatusManager, strict bool,
-	deviceName string, requests []R, cvs *[]*sdkmodels.CommandValue) error {
-	for _, req := range requests {
-		if req.Skipped() {
+func (a *Agent) PostProcessRequests(deviceName string, reqs interface{}, write bool, cvs *[]*sdkmodels.CommandValue) error {
+	rValue := reflect.ValueOf(reqs)
+	if rValue.Kind() != reflect.Slice {
+		return errors.NewCommonEdgeX(errors.KindContractInvalid, "requests to be processed not a slice", nil)
+	}
+	for i := 0; i < rValue.Len(); i++ {
+		req, ok := rValue.Index(i).Interface().(contracts.BaseRequest)
+		if !ok {
+			return errors.NewCommonEdgeX(errors.KindContractInvalid, "request can not assert as BaseRequest", nil)
+		}
+		if req.Skipped() || !write && req.Error() == nil && req.Result() == nil {
 			continue
 		}
 		if err := req.Error(); err != nil {
-			manager.OnHandleCommandsFailed(deviceName, 1)
-			if strict {
+			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
+			if a.StrictMode || write {
 				return err
 			}
-		} else {
-			manager.OnHandleCommandsSuccessfully(deviceName, 1)
 		}
 		if result := req.Result(); result != nil && cvs != nil {
 			cv, err := result.CommandValue(req.Native().DeviceResourceName, req.Native().Type)
@@ -110,6 +115,7 @@ func PostProcessRequests[R contracts.BaseRequest](manager interfaces.StatusManag
 			}
 			*cvs = append(*cvs, cv)
 		}
+		a.StatusManager.OnHandleCommandsSuccessfully(deviceName, 1)
 	}
 	return nil
 }
