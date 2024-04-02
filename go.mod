@@ -9,6 +9,7 @@ require (
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/sirupsen/logrus v1.7.0
+	github.com/spf13/cast v1.6.0
 	github.com/stretchr/testify v1.8.0
 )
 

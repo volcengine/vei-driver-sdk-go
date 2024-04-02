@@ -17,6 +17,7 @@
 package contracts
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -53,30 +54,32 @@ func TestSimpleResult_Tags(t *testing.T) {
 }
 
 func TestSimpleResult_CommandValue(t *testing.T) {
-	name := "resource_name"
-	value := "string-value"
-	result := NewSimpleResult(value)
-
-	cv, err := result.CommandValue(name, common.ValueTypeInt32)
-	require.Error(t, err)
-	require.Nil(t, cv)
-
-	cv, err = result.CommandValue(name, common.ValueTypeString)
-	require.NoError(t, err)
-	require.NotNil(t, cv)
-	require.Equal(t, value, cv.Value)
-
-	result = NewSimpleResult(nil)
-	cv, err = result.CommandValue(name, common.ValueTypeInt32)
-	require.Error(t, err)
-	require.Nil(t, cv)
-
-	stringArr := []string{"1", "2", "3"}
-	result = NewSimpleResult(stringArr)
-	cv, err = result.CommandValue(name, common.ValueTypeStringArray)
-	require.NoError(t, err)
-	require.NotNil(t, cv)
-	require.Equal(t, stringArr, cv.Value)
+	tests := []struct {
+		name      string
+		valueType string
+		value     interface{}
+		cast      bool
+		wantValue interface{}
+		wantErr   bool
+	}{
+		{name: "error type", valueType: common.ValueTypeInt32, value: "100", wantValue: 100, wantErr: true},
+		{name: "cast type", valueType: common.ValueTypeInt32, value: "100", cast: true, wantValue: int32(100), wantErr: false},
+		{name: "correct type", valueType: common.ValueTypeString, value: "100", wantValue: "100", wantErr: false},
+		{name: "nil result", valueType: common.ValueTypeInt32, value: nil, wantValue: 100, wantErr: true},
+		{name: "string arr", valueType: common.ValueTypeStringArray, value: []string{"1", "2", "3"}, wantValue: []string{"1", "2", "3"}, wantErr: false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NewSimpleResult(tt.value).WithCast(tt.cast).CommandValue(tt.name, tt.valueType)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CommandValue() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != nil && !reflect.DeepEqual(got.Value, tt.wantValue) {
+				t.Errorf("CommandValue() got = %v, want %v", got.Value, tt.wantValue)
+			}
+		})
+	}
 }
 
 func TestNativeResult_Value(t *testing.T) {

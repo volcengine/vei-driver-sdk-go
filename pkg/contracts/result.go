@@ -40,6 +40,7 @@ type SimpleResult struct {
 	value  interface{}
 	origin *time.Time
 	tags   map[string]string
+	cast   bool
 }
 
 func NewSimpleResult(value interface{}) *SimpleResult {
@@ -53,6 +54,11 @@ func (r *SimpleResult) WithTime(origin time.Time) *SimpleResult {
 
 func (r *SimpleResult) WithTags(tags map[string]string) *SimpleResult {
 	r.tags = tags
+	return r
+}
+
+func (r *SimpleResult) WithCast(cast bool) *SimpleResult {
+	r.cast = cast
 	return r
 }
 
@@ -73,7 +79,15 @@ func (r *SimpleResult) Tags() map[string]string {
 
 func (r *SimpleResult) CommandValue(resourceName string, valueType string) (*models.CommandValue, error) {
 	valueType = utils.Ternary(valueType == string(StringArray), string(Object), valueType)
-	return models.NewCommandValueWithOrigin(resourceName, valueType, r.value, r.UnixNano())
+	cv, err := models.NewCommandValue(resourceName, valueType, r.value)
+	if err != nil && r.cast {
+		cv, err = utils.CastCommandValue(resourceName, valueType, r.value)
+	}
+	if cv != nil {
+		cv.Origin = r.UnixNano()
+		cv.Tags = r.Tags()
+	}
+	return cv, err
 }
 
 type NativeResult struct {
