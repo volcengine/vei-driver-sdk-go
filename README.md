@@ -1,4 +1,9 @@
 # vei-driver-sdk-go
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/volcengine/vei-driver-sdk-go/go.yml?branch=main&logo=github)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/volcengine/vei-driver-sdk-go?logo=go)
+![GitHub License](https://img.shields.io/github/license/volcengine/vei-driver-sdk-go)
+![GitHub Release](https://img.shields.io/github/v/release/volcengine/vei-driver-sdk-go)
+
 欢迎使用边缘智能驱动开发SDK for Golang，本文档为您介绍如何开发一个自定义驱动
 
 [边缘智能产品主页](https://www.volcengine.com/product/vei/mainpage)
@@ -17,21 +22,18 @@ func main() {
 ### 1. 必备接口
 ```go
 type MinimalDriver struct {
-    lc       logger.LoggingClient
-    asyncCh  chan<- *sdkmodels.AsyncValues
-    reporter interfaces.EventReporter
+    logger  logger.Logger
+    asyncCh chan<- *contracts.AsyncValues
 }
 
 /**
  *  初始化接口: 程序启动时被调用一次
  *  @param lc:              logger客户端
  *  @param asyncCh:         原生的异步数据上报通道
- *  @param eventReporter:   事件上报函数(驱动主动调用)，
  */
-func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkmodels.AsyncValues, eventReporter interfaces.EventReporter) error {
-    m.lc = lc
+func (m *MinimalDriver) Initialize(logger logger.Logger, asyncCh chan<- *contracts.AsyncValues) error {
+    m.logger = logger
     m.asyncCh = asyncCh
-    m.reporter = eventReporter
     // 其他必要的初始化过程
     ...
     return nil
@@ -39,32 +41,39 @@ func (m *MinimalDriver) Initialize(lc logger.LoggingClient, asyncCh chan<- *sdkm
 
 /**
  *  数据读取接口: 根据设置的采样周期定时调用，或通过在线调试主动调用
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
+ *  @param device:          设备，包含了设备名称和通信协议内容
  *  @param reqs:            请求列表，每个请求中包含属性标识符和点表定义
  */
-func (m *MinimalDriver) HandleReadCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkmodels.CommandRequest) ([]*sdkmodels.CommandValue, error) {
-    result := make([]*sdkmodels.CommandValue, len(reqs))
-    for i, req := range reqs {
-        var cv *sdkmodels.CommandValue
-        // 根据 req 中参数信息访问设备获取数据
-        ...
-        result[i] = cv
-
+func (m *MinimalDriver) ReadProperty(device *contracts.Device, reqs []contracts.ReadRequest) error {
+	// 通过 device.Name 或 device.Protocols 和设备建立连接，如果连接失败，可手动更新设备状态。
+    if err := createConnectionWith(device);err != nil{
+        device.SetOperatingState(state, reason)
     }
-    return result, nil
+	
+    for _, req := range reqs {
+        // 根据请求中携带的模块、属性名、类型等参数访问设备获取数据
+        value, err := readProperty(device, req)
+        ...
+		
+        if err != nil {
+            // 返回读取的结果
+            req.SetResult(contracts.NewSimpleResult(value))
+        } else {
+            // 或者返回失败内容
+            req.Failed(err)			
+        }
+    }
+	return nil
 }
 
 /**
  *  数据写入接口: 通过在线调试主动调用
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
- *  @param reqs:            请求列表，每个请求中包含属性标识符和点表定义
- *  @param params:          参数列表，与reqs长度相等且一一对应，每个参数包含了参数类型和参数值
+ *  @param device:          设备，包含了设备名称和通信协议内容
+ *  @param reqs:            请求列表，每个请求中包含属性标识符和点表定义，以及写入的参数
  */
-func (m *MinimalDriver) HandleWriteCommands(deviceName string, protocols map[string]models.ProtocolProperties, reqs []sdkmodels.CommandRequest, params []*sdkmodels.CommandValue) error {
+func (m *MinimalDriver) WriteProperty(device *contracts.Device, reqs []contracts.WriteRequest) error {
     for idx, req := range reqs {
-        param := params[idx]
+        param := req.Param()
         // 根据 req 和 param 向设备写入数据
         ...
     }
@@ -73,12 +82,10 @@ func (m *MinimalDriver) HandleWriteCommands(deviceName string, protocols map[str
 
 /**
  *  服务调用接口: 通过在线调试主动调用
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
- *  @param req:             服务请求，包含服务标识符
- *  @param data:            服务参数，已完成解码，JSON格式
+ *  @param device:          设备，包含了设备名称和通信协议内容
+ *  @param reqs:            请求列表，每个请求中包含了服务的标识符和相关定义，以及调用的参数
  */
-func (m *MinimalDriver) HandleServiceCall(deviceName string, protocols map[string]models.ProtocolProperties, req sdkmodels.CommandRequest, data []byte) (*sdkmodels.CommandValue, error) {
+func (m *MinimalDriver)  CallService(device *contracts.Device, reqs []contracts.CallRequest) error {
     type Request struct {
         X float32 `json:"x"`
         Y float32 `json:"y"`
@@ -89,14 +96,17 @@ func (m *MinimalDriver) HandleServiceCall(deviceName string, protocols map[strin
     }
     
     request, response := &Request{}, &Response{}
-    if err := json.Unmarshal(data, request); err != nil {
+    if err := json.Unmarshal(req.Payload(), request); err != nil {
         return nil, err
     }
     
     // 根据请求内容调用对应的Service
     ...
     
-    return sdkmodels.NewCommandValue(req.DeviceResourceName, common.ValueTypeObject, response)
+    // 返回调用结果
+    req.SetResult(contracts.NewSimpleResult(response))
+
+    return nil
 }
 
 /**
@@ -131,7 +141,7 @@ func (m *MinimalDriver) RemoveDevice(deviceName string, protocols map[string]mod
 ```
 
 ## SDK功能规划
-- [ ] 事件上报
+- [x] 事件上报
 - [ ] 设备自发现
 - [ ] 点表在线调试功能
 
