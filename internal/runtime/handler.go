@@ -42,7 +42,7 @@ func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]model
 
 	if len(readRequests) > 0 {
 		if err = a.driver.ReadProperty(device, readRequests); err != nil {
-			a.PostProcessDevice(device)
+			a.PostProcessDevice(device, err)
 			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
@@ -52,7 +52,7 @@ func (a *Agent) HandleReadCommands(deviceName string, protocols map[string]model
 	}
 	if len(callRequests) > 0 {
 		if err = a.driver.CallService(device, callRequests); err != nil {
-			a.PostProcessDevice(device)
+			a.PostProcessDevice(device, err)
 			a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 			return nil, err
 		}
@@ -81,7 +81,7 @@ func (a *Agent) HandleWriteCommands(deviceName string, protocols map[string]mode
 	}
 
 	if err = a.driver.WriteProperty(device, requests); err != nil {
-		a.PostProcessDevice(device)
+		a.PostProcessDevice(device, err)
 		a.StatusManager.OnHandleCommandsFailed(deviceName, 1)
 		return err
 	}
@@ -151,8 +151,9 @@ func (a *Agent) AddDevice(deviceName string, protocols map[string]models.Protoco
 	}
 	// Call the interface 'AddDevice' if the driver has implemented the handler.
 	device := contracts.WrapDevice(deviceName, protocols)
-	defer a.PostProcessDevice(device)
-	return a.handler.AddDevice(device)
+	err := a.handler.AddDevice(device)
+	a.PostProcessDevice(device, err)
+	return err
 }
 
 func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, _ models.AdminState) error {
@@ -162,8 +163,9 @@ func (a *Agent) UpdateDevice(deviceName string, protocols map[string]models.Prot
 	}
 	// Call the interface 'UpdateDevice' if the driver has implemented the handler.
 	device := contracts.WrapDevice(deviceName, protocols)
-	defer a.PostProcessDevice(device)
-	return a.handler.UpdateDevice(device)
+	err := a.handler.UpdateDevice(device)
+	a.PostProcessDevice(device, err)
+	return err
 }
 
 func (a *Agent) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {
@@ -177,7 +179,8 @@ func (a *Agent) RemoveDevice(deviceName string, protocols map[string]models.Prot
 	return a.handler.RemoveDevice(device)
 }
 
-func (a *Agent) PostProcessDevice(device *contracts.Device) {
+func (a *Agent) PostProcessDevice(device *contracts.Device, err error) {
+	device.UpdateStateByError(err)
 	if device.OperatingState == "" {
 		return
 	}

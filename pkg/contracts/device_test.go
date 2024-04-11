@@ -87,14 +87,19 @@ func TestDevice_SetOperatingState(t *testing.T) {
 	device.SetStateDown()
 	require.Equal(t, DOWN, device.OperatingState)
 
-	device.SetStateReachable()
-	require.Equal(t, REACHABLE, device.OperatingState)
-
-	device.SetStateUnreachable()
-	require.Equal(t, UNREACHABLE, device.OperatingState)
-
 	state, message := UP, "error message"
 	device.SetOperatingState(state, message)
 	require.Equal(t, state, device.OperatingState)
 	require.Equal(t, message, device.Message)
+}
+
+func TestDevice_UpdateStateByError(t *testing.T) {
+	kind := ErrorKind("ParseFailed")
+	reason := "parse failed"
+	raw := NewErrorWithReason(kind, reason)
+
+	device := WrapDevice("device", nil)
+	device.UpdateStateByError(raw)
+	require.Equal(t, DOWN, device.OperatingState)
+	require.Equal(t, raw.Error(), device.Message)
 }

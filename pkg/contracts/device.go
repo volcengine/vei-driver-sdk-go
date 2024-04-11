@@ -17,6 +17,8 @@
 package contracts
 
 import (
+	"errors"
+
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/models"
 )
 
@@ -63,17 +65,15 @@ func (d *Device) SetStateDown() {
 	d.OperatingState = DOWN
 }
 
-// SetStateReachable set the device state to REACHABLE.
-func (d *Device) SetStateReachable() {
-	d.OperatingState = REACHABLE
-}
-
-// SetStateUnreachable set the device state to UNREACHABLE.
-func (d *Device) SetStateUnreachable() {
-	d.OperatingState = UNREACHABLE
-}
-
 // SetOperatingState supports to set the device state customarily.
 func (d *Device) SetOperatingState(state OperatingState, message string) {
 	d.OperatingState, d.Message = state, message
+}
+
+func (d *Device) UpdateStateByError(raw error) {
+	var err *Error
+	if errors.As(raw, &err) {
+		d.OperatingState = DOWN
+		d.Message = err.Error()
+	}
 }
