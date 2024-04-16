@@ -107,6 +107,7 @@ func (a *Agent) PostProcessRequests(deviceName string, reqs interface{}, write b
 			if a.StrictMode || write {
 				return err
 			}
+			continue
 		}
 		if result := req.Result(); result != nil && cvs != nil {
 			cv, err := result.CommandValue(req.Native().DeviceResourceName, req.Native().Type)
