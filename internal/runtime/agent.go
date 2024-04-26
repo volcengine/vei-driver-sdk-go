@@ -92,7 +92,7 @@ func (a *Agent) Initialize(_ lc.LoggingClient, asyncCh chan<- *sdkmodels.AsyncVa
 		}
 	}
 
-	if err := RegisterRoutes(); err != nil {
+	if err := a.RegisterRoutes(); err != nil {
 		return err
 	}
 

@@ -20,15 +20,20 @@ import (
 	"net/http"
 
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/common"
+	"github.com/gorilla/mux"
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/controller/debug"
 	"github.com/volcengine/vei-driver-sdk-go/internal/controller/discovery"
 )
 
 const (
-	ApiDebugRoute         = common.ApiBase + "/debug"
-	ApiDebugLogging       = common.ApiBase + "/logging"
-	ApiAutoDiscoveryRoute = common.ApiBase + "/autodiscovery"
+	CustomizedServerPort = ":9999"
+)
+
+const (
+	ApiDebugRoute     = common.ApiBase + "/debug"
+	ApiDebugLogging   = common.ApiBase + "/logging"
+	ApiDiscoveryRoute = common.ApiBase + "/device/discovery"
 )
 
 type Route struct {
@@ -37,16 +42,27 @@ type Route struct {
 	method  []string
 }
 
-func RegisterRoutes() error {
+func (a *Agent) RegisterRoutes() error {
 	routes := []Route{
-		{route: ApiDebugRoute, handler: debug.Debug(agent.debugger), method: []string{http.MethodPost}},
+		{route: ApiDebugRoute, handler: debug.Debug(a.debugger), method: []string{http.MethodPost}},
 		{route: ApiDebugLogging, handler: debug.SetDefaultLogLevel, method: []string{http.MethodGet, http.MethodPost}},
-		{route: ApiAutoDiscoveryRoute, handler: discovery.Discover(agent.discovery), method: []string{http.MethodGet}},
+		{route: ApiDiscoveryRoute, handler: discovery.Discover(a.discovery), method: []string{http.MethodGet, http.MethodPost}},
 	}
+
+	router := mux.NewRouter()
 	for _, route := range routes {
-		if err := agent.service.AddRoute(route.route, route.handler, route.method...); err != nil {
-			return err
-		}
+		router.HandleFunc(route.route, route.handler).Methods(route.method...)
 	}
+
+	server := &http.Server{
+		Addr:    CustomizedServerPort,
+		Handler: router,
+	}
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 	return nil
 }

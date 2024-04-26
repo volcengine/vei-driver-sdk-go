@@ -16,6 +16,14 @@
 
 package runtime
 
-func (a *Agent) Discover() {
-	a.log.Warnf("[Discover]: function not implemented yet")
+import (
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestAgent_RegisterRoutes(t *testing.T) {
+	a := &Agent{}
+	err := a.RegisterRoutes()
+	require.NoError(t, err)
 }
