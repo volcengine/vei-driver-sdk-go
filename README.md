@@ -122,27 +122,24 @@ func (m *MinimalDriver) Stop(force bool) error {
 ```go
 /**
  *  添加设备回调函数: 成功添加设备时调用一次
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
+ *  @param device:      设备实例
  */
-func (m *MinimalDriver) AddDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {}
+func (m *MinimalDriver) AddDevice(device *contracts.Device) error error {}
 /**
  *  更新设备回调函数: 成功更新设备时调用一次
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
+ *  @param device:      设备实例
  */
-func (m *MinimalDriver) UpdateDevice(deviceName string, protocols map[string]models.ProtocolProperties, adminState models.AdminState) error {}
+func (m *MinimalDriver) UpdateDevice(device *contracts.Device) error {}
 /**
  *  删除设备回调函数: 成功删除设备时调用一次
- *  @param deviceName:      设备名称
- *  @param protocols:       设备的协议参数
+ *  @param device:      设备实例
  */
-func (m *MinimalDriver) RemoveDevice(deviceName string, protocols map[string]models.ProtocolProperties) error {}
+func (m *MinimalDriver) RemoveDevice(device *contracts.Device) error {}
 ```
 
 ## SDK功能规划
 - [x] 事件上报
-- [ ] 设备自发现
+- [x] 设备发现
 - [ ] 点表在线调试功能
 
 
