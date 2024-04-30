@@ -39,10 +39,10 @@ func (s OperatingState) String() string {
 
 // Device contains the necessary information of a device.
 type Device struct {
-	Name           string
-	Protocols      map[string]models.ProtocolProperties
-	OperatingState OperatingState
-	Message        string
+	Name           string                               `json:"name"`
+	Protocols      map[string]models.ProtocolProperties `json:"protocols"`
+	OperatingState OperatingState                       `json:"operating_state,omitempty"`
+	Message        string                               `json:"message,omitempty"`
 }
 
 func WrapDevice(name string, protocols map[string]models.ProtocolProperties) *Device {
