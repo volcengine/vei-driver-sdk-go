@@ -19,6 +19,7 @@ package interfaces
 import (
 	"context"
 
+	"github.com/volcengine/vei-driver-sdk-go/extension/requests"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
 )
@@ -60,7 +61,7 @@ type DeviceHandler interface {
 // Discovery is an optional interface implemented by driver that support dynamic device discovery.
 type Discovery interface {
 	// Discover triggers protocol specific device discovery.
-	Discover(ctx context.Context, param *contracts.DiscoveryParameter, devices chan<- *contracts.Device)
+	Discover(ctx context.Context, param *requests.DiscoveryParameter, deviceCh chan<- *contracts.Device)
 }
 
 // TODO: Debugger is an optional interface implemented by driver that support debugging for device profile.

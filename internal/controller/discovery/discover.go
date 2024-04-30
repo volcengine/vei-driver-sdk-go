@@ -27,6 +27,7 @@ import (
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/dtos/common"
 	"github.com/edgexfoundry/go-mod-core-contracts/v2/errors"
 
+	"github.com/volcengine/vei-driver-sdk-go/extension/requests"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
@@ -64,7 +65,7 @@ func Discover(discovery interfaces.Discovery) func(writer http.ResponseWriter, r
 			return
 		}
 
-		param := &contracts.DiscoveryParameter{}
+		param := &requests.DiscoveryParameter{}
 		if err = json.Unmarshal(body, param); err != nil {
 			edgexErr := errors.NewCommonEdgeX(errors.KindServerError, "failed to parse request body", err)
 			WriteErrorResponse(writer, edgexErr)
@@ -75,14 +76,14 @@ func Discover(discovery interfaces.Discovery) func(writer http.ResponseWriter, r
 		ctx, cancel := context.WithTimeout(request.Context(), param.MaxDurationTime)
 		defer cancel()
 
-		deviceChan := make(chan *contracts.Device, DefaultDeviceChannelNum)
-		go discovery.Discover(ctx, param, deviceChan)
+		deviceCh := make(chan *contracts.Device, DefaultDeviceChannelNum)
+		go discovery.Discover(ctx, param, deviceCh)
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case device, ok := <-deviceChan:
+			case device, ok := <-deviceCh:
 				if !ok {
 					return
 				}

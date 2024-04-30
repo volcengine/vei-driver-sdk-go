@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package contracts
+package requests
 
 import (
 	"testing"
