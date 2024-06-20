@@ -52,6 +52,9 @@ func Startup(name string, version string, proto interface{}, opts ...Option) {
 	if debugger, ok := proto.(interfaces.Debugger); ok {
 		agent.debugger = debugger
 	}
+	if webhook, ok := proto.(interfaces.Webhook); ok {
+		agent.webhook = webhook
+	}
 
 	startup.Bootstrap(agent.name, agent.version, agent)
 }

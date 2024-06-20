@@ -24,6 +24,7 @@ import (
 
 	"github.com/volcengine/vei-driver-sdk-go/internal/controller/debug"
 	"github.com/volcengine/vei-driver-sdk-go/internal/controller/discovery"
+	"github.com/volcengine/vei-driver-sdk-go/internal/controller/hook"
 )
 
 const (
@@ -34,6 +35,9 @@ const (
 	ApiDebugRoute     = common.ApiBase + "/debug"
 	ApiDebugLogging   = common.ApiBase + "/logging"
 	ApiDiscoveryRoute = common.ApiBase + "/device/discovery"
+
+	ApiHookOnStreamNotFoundRoute   = common.ApiBase + "/hook/on_stream_not_found"
+	ApiHookOnStreamNoneReaderRoute = common.ApiBase + "/hook/on_stream_none_reader"
 )
 
 type Route struct {
@@ -47,6 +51,8 @@ func (a *Agent) RegisterRoutes() error {
 		{route: ApiDebugRoute, handler: debug.Debug(a.debugger), method: []string{http.MethodPost}},
 		{route: ApiDebugLogging, handler: debug.SetDefaultLogLevel, method: []string{http.MethodGet, http.MethodPost}},
 		{route: ApiDiscoveryRoute, handler: discovery.Discover(a.discovery), method: []string{http.MethodGet, http.MethodPost}},
+		{route: ApiHookOnStreamNotFoundRoute, handler: hook.OnStreamNotFound(a.webhook), method: []string{http.MethodPost}},
+		{route: ApiHookOnStreamNoneReaderRoute, handler: hook.OnStreamNoneReader(a.webhook), method: []string{http.MethodPost}},
 	}
 
 	router := mux.NewRouter()

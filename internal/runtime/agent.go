@@ -39,6 +39,7 @@ type Agent struct {
 	handler   interfaces.DeviceHandler
 	discovery interfaces.Discovery
 	debugger  interfaces.Debugger
+	webhook   interfaces.Webhook
 	reporter  interfaces.Reporter
 	service   sdkinterfaces.DeviceServiceSDK
 	asyncCh   chan<- *sdkmodels.AsyncValues // used by agent
