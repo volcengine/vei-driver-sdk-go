@@ -33,6 +33,9 @@ type AddFFmpegSourceParams struct {
 
 	// EnableMp4 是否开启mp4录制
 	EnableMp4 *int `form:"enable_mp4,omitempty" json:"enable_mp4,omitempty"`
+
+	// FfmpegCmdKey FFmpeg命名参数模板，置空则采用配置项:ffmpeg.cmd
+	FfmpegCmdKey *string `form:"ffmpeg_cmd_key,omitempty" json:"ffmpeg_cmd_key,omitempty"`
 }
 
 // AddStreamProxyParams defines parameters for AddStreamProxy.
@@ -194,6 +197,12 @@ type DeleteRecordDirectoryParams struct {
 
 	// Period 流的录像日期，格式为2020-01-01,如果不是完整的日期，那么会删除失败
 	Period *string `form:"period,omitempty" json:"period,omitempty"`
+}
+
+// DownloadFileParams defines parameters for DownloadFile.
+type DownloadFileParams struct {
+	// FilePath 文件绝对路径，根据文件名生成Content-Type；该接口将触发on_http_access hook
+	FilePath *string `form:"file_path,omitempty" json:"file_path,omitempty"`
 }
 
 // GetAllSessionParams defines parameters for GetAllSession.
@@ -712,6 +721,9 @@ type ClientInterface interface {
 	// DeleteRecordDirectory request
 	DeleteRecordDirectory(ctx context.Context, params *DeleteRecordDirectoryParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DownloadFile request
+	DownloadFile(ctx context.Context, params *DownloadFileParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetAllSession request
 	GetAllSession(ctx context.Context, params *GetAllSessionParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -949,6 +961,18 @@ func (c *Client) DelStreamPusherProxy(ctx context.Context, params *DelStreamPush
 
 func (c *Client) DeleteRecordDirectory(ctx context.Context, params *DeleteRecordDirectoryParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteRecordDirectoryRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DownloadFile(ctx context.Context, params *DownloadFileParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDownloadFileRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -1472,6 +1496,22 @@ func NewAddFFmpegSourceRequest(server string, params *AddFFmpegSourceParams) (*h
 		if params.EnableMp4 != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "enable_mp4", runtime.ParamLocationQuery, *params.EnableMp4); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		if params.FfmpegCmdKey != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "ffmpeg_cmd_key", runtime.ParamLocationQuery, *params.FfmpegCmdKey); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -2539,6 +2579,55 @@ func NewDeleteRecordDirectoryRequest(server string, params *DeleteRecordDirector
 		if params.Period != nil {
 
 			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "period", runtime.ParamLocationQuery, *params.Period); err != nil {
+				return nil, err
+			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
+				return nil, err
+			} else {
+				for k, v := range parsed {
+					for _, v2 := range v {
+						queryValues.Add(k, v2)
+					}
+				}
+			}
+
+		}
+
+		queryURL.RawQuery = queryValues.Encode()
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewDownloadFileRequest generates requests for DownloadFile
+func NewDownloadFileRequest(server string, params *DownloadFileParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/index/api/downloadFile")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		queryValues := queryURL.Query()
+
+		if params.FilePath != nil {
+
+			if queryFrag, err := runtime.StyleParamWithLocation("form", true, "file_path", runtime.ParamLocationQuery, *params.FilePath); err != nil {
 				return nil, err
 			} else if parsed, err := url.ParseQuery(queryFrag); err != nil {
 				return nil, err
@@ -5428,6 +5517,9 @@ type ClientWithResponsesInterface interface {
 	// DeleteRecordDirectoryWithResponse request
 	DeleteRecordDirectoryWithResponse(ctx context.Context, params *DeleteRecordDirectoryParams, reqEditors ...RequestEditorFn) (*DeleteRecordDirectoryResponse, error)
 
+	// DownloadFileWithResponse request
+	DownloadFileWithResponse(ctx context.Context, params *DownloadFileParams, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error)
+
 	// GetAllSessionWithResponse request
 	GetAllSessionWithResponse(ctx context.Context, params *GetAllSessionParams, reqEditors ...RequestEditorFn) (*GetAllSessionResponse, error)
 
@@ -5777,6 +5869,27 @@ func (r DeleteRecordDirectoryResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r DeleteRecordDirectoryResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DownloadFileResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DownloadFileResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DownloadFileResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -6605,6 +6718,15 @@ func (c *ClientWithResponses) DeleteRecordDirectoryWithResponse(ctx context.Cont
 	return ParseDeleteRecordDirectoryResponse(rsp)
 }
 
+// DownloadFileWithResponse request returning *DownloadFileResponse
+func (c *ClientWithResponses) DownloadFileWithResponse(ctx context.Context, params *DownloadFileParams, reqEditors ...RequestEditorFn) (*DownloadFileResponse, error) {
+	rsp, err := c.DownloadFile(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDownloadFileResponse(rsp)
+}
+
 // GetAllSessionWithResponse request returning *GetAllSessionResponse
 func (c *ClientWithResponses) GetAllSessionWithResponse(ctx context.Context, params *GetAllSessionParams, reqEditors ...RequestEditorFn) (*GetAllSessionResponse, error) {
 	rsp, err := c.GetAllSession(ctx, params, reqEditors...)
@@ -7096,6 +7218,22 @@ func ParseDeleteRecordDirectoryResponse(rsp *http.Response) (*DeleteRecordDirect
 	}
 
 	response := &DeleteRecordDirectoryResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseDownloadFileResponse parses an HTTP response from a DownloadFileWithResponse call
+func ParseDownloadFileResponse(rsp *http.Response) (*DownloadFileResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DownloadFileResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}
