@@ -65,7 +65,7 @@ func OnStreamNotFound(webhook interfaces.Webhook) func(writer http.ResponseWrite
 			return
 		}
 
-		writer.WriteHeader(http.StatusNoContent)
+		writer.WriteHeader(http.StatusOK)
 	}
 }
 
@@ -99,7 +99,7 @@ func OnStreamNoneReader(webhook interfaces.Webhook) func(writer http.ResponseWri
 			return
 		}
 
-		writer.WriteHeader(http.StatusNoContent)
+		writer.WriteHeader(http.StatusOK)
 	}
 }
 
