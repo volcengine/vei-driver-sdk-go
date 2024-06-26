@@ -47,6 +47,9 @@ type Error struct {
 }
 
 func NewError(kind ErrorKind, err error) *Error {
+	if err == nil {
+		return NewErrorWithReason(kind, "Unknown")
+	}
 	return NewErrorWithReason(kind, err.Error())
 }
 
