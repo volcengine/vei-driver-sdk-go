@@ -108,6 +108,12 @@ func WithHealthCheckCallback(cb HealthCheckCallback) func(*Stream) {
 	}
 }
 
+func WithHealthy(healthy bool) func(*Stream) {
+	return func(stream *Stream) {
+		stream.healthy = healthy
+	}
+}
+
 func (s *Stream) Start() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
@@ -170,6 +176,18 @@ func (s *Stream) stop(ctx context.Context) error {
 		return fmt.Errorf("invoke DelStreamProxy failed: %s", resp.Message)
 	}
 	return nil
+}
+
+func (s *Stream) AddProxy(ctx context.Context) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.start(ctx)
+}
+
+func (s *Stream) DelProxy(ctx context.Context) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	return s.stop(ctx)
 }
 
 func (s *Stream) healthCheck(ctx context.Context) {
@@ -246,6 +264,14 @@ func (s *Stream) IsMediaOnline(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("invoke IsMediaOnline failed: %s", resp.Message)
 	}
 	return resp.Online, nil
+}
+
+func (s *Stream) Url() string {
+	return s.url
+}
+
+func (s *Stream) OnDemand() bool {
+	return s.onDemand
 }
 
 func (s *Stream) Healthy() bool {

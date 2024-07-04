@@ -65,6 +65,7 @@ func TestNewStream(t *testing.T) {
 				WithProbeEnabled(false),
 				WithProbeInterval(time.Minute * 2),
 				WithHealthCheckCallback(NOOPHealthCheckCallback),
+				WithHealthy(false),
 			}},
 			want: &Stream{
 				name:          "device",
