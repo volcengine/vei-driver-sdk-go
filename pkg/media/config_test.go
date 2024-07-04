@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
 	"testing"
@@ -29,19 +29,19 @@ const (
 )
 
 func MockMediaConfig() {
-	if media == nil {
-		config := map[string]string{
+	if config == nil {
+		conf := map[string]string{
 			"MediaServer": server,
 			"MediaSecret": secret,
 			"MediaVhost":  vhost,
 		}
-		_ = InitializeMediaConfig(config, "mock")
+		_ = InitializeConfig(conf, "mock")
 	}
 }
 
 func TestInitializeMediaConfig(t *testing.T) {
 	defer func() {
-		media = nil
+		config = nil
 	}()
 
 	type args struct {
@@ -58,8 +58,8 @@ func TestInitializeMediaConfig(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := InitializeMediaConfig(tt.args.configs, tt.args.app); (err != nil) != tt.wantErr {
-				t.Errorf("InitializeMediaConfig() error = %v, wantErr %v", err, tt.wantErr)
+			if err := InitializeConfig(tt.args.configs, tt.args.app); (err != nil) != tt.wantErr {
+				t.Errorf("InitializeConfig() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

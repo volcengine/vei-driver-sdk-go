@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
 	"encoding/json"
@@ -22,9 +22,9 @@ import (
 	"github.com/volcengine/vei-driver-sdk-go/pkg/clients"
 )
 
-var media *MediaConfig
+var config *Config
 
-type MediaConfig struct {
+type Config struct {
 	Server string             `json:"MediaServer"`
 	Secret string             `json:"MediaSecret"`
 	VHost  string             `json:"MediaVHost"`
@@ -32,27 +32,27 @@ type MediaConfig struct {
 	Client *clients.ZLMClient `json:"-"`
 }
 
-func InitializeMediaConfig(configs map[string]string, app string) error {
+func InitializeConfig(configs map[string]string, app string) error {
 	data, err := json.Marshal(configs)
 	if err != nil {
 		return err
 	}
 
-	media = &MediaConfig{}
-	if err = json.Unmarshal(data, media); err != nil {
+	config = &Config{}
+	if err = json.Unmarshal(data, config); err != nil {
 		return err
 	}
 
-	client, err := clients.NewZLMClient(media.Server)
+	client, err := clients.NewZLMClient(config.Server)
 	if err != nil {
 		return err
 	}
 
-	media.Client = client
-	media.App = app
+	config.Client = client
+	config.App = app
 	return nil
 }
 
-func Media() *MediaConfig {
-	return media
+func Media() *Config {
+	return config
 }

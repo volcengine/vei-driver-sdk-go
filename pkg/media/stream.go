@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
 	"context"
@@ -129,10 +129,10 @@ func (s *Stream) Start() error {
 
 func (s *Stream) start(ctx context.Context) error {
 	logger.D.Infof("add stream proxy for device %s, url=%s", s.name, s.url)
-	resp, err := media.Client.AddStreamProxy(ctx, &zlm.AddStreamProxyParams{
-		Secret: &media.Secret,
-		Vhost:  &media.VHost,
-		App:    &media.App,
+	resp, err := Media().Client.AddStreamProxy(ctx, &zlm.AddStreamProxyParams{
+		Secret: &Media().Secret,
+		Vhost:  &Media().VHost,
+		App:    &Media().App,
 		Stream: &s.name,
 		Url:    &s.url,
 	})
@@ -158,9 +158,9 @@ func (s *Stream) Stop() error {
 
 func (s *Stream) stop(ctx context.Context) error {
 	logger.D.Infof("delete stream proxy for device %s", s.name)
-	key := strings.Join([]string{media.VHost, media.App, s.name}, "/")
-	resp, err := media.Client.DelStreamProxy(ctx, &zlm.DelStreamProxyParams{
-		Secret: &media.Secret,
+	key := strings.Join([]string{Media().VHost, Media().App, s.name}, "/")
+	resp, err := Media().Client.DelStreamProxy(ctx, &zlm.DelStreamProxyParams{
+		Secret: &Media().Secret,
 		Key:    &key,
 	})
 	if err != nil {
@@ -232,10 +232,10 @@ func (s *Stream) checkMediaOnline(ctx context.Context) error {
 }
 
 func (s *Stream) IsMediaOnline(ctx context.Context) (bool, error) {
-	resp, err := media.Client.IsMediaOnline(ctx, &zlm.IsMediaOnlineParams{
-		Secret: &media.Secret,
-		Vhost:  &media.VHost,
-		App:    &media.App,
+	resp, err := Media().Client.IsMediaOnline(ctx, &zlm.IsMediaOnlineParams{
+		Secret: &Media().Secret,
+		Vhost:  &Media().VHost,
+		App:    &Media().App,
 		Schema: &s.schema,
 		Stream: &s.name,
 	})

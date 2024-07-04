@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
 	"context"
@@ -43,11 +43,11 @@ func NewSnapshotResponse(snapshot []byte) *SnapshotResponse {
 func (s *Stream) Snapshot(ctx context.Context) (*SnapshotResponse, error) {
 	expire := 1
 	timeout := 10
-	localUrl := fmt.Sprintf("rtsp://127.0.0.1:554/%s/%s", media.App, s.name)
+	localUrl := fmt.Sprintf("rtsp://127.0.0.1:554/%s/%s", Media().App, s.name)
 	stream := utils.Ternary(s.onDemand, s.url, localUrl)
 
-	resp, err := media.Client.Native.GetSnapWithResponse(ctx, &zlm.GetSnapParams{
-		Secret:     &media.Secret,
+	resp, err := Media().Client.Native.GetSnapWithResponse(ctx, &zlm.GetSnapParams{
+		Secret:     &Media().Secret,
 		Url:        &stream,
 		TimeoutSec: &timeout,
 		ExpireSec:  &expire,

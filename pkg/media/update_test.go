@@ -14,23 +14,40 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
-	"context"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewSnapshotResponse(t *testing.T) {
-	resp := NewSnapshotResponse(nil)
-	require.NotNil(t, resp)
-	require.Contains(t, resp.Result, SnapshotResultHeader)
+func TestStream_SetOnDemand(t *testing.T) {
+	stream := &Stream{}
+	stream.SetOnDemand(true)
+	require.Equal(t, true, stream.onDemand)
 }
 
-func TestStream_Snapshot(t *testing.T) {
-	stream := &Stream{}
-	_, err := stream.Snapshot(context.Background())
+func TestStream_UpdateURL(t *testing.T) {
+	stream := &Stream{
+		name:          "device",
+		url:           "rtsp://127.0.0.1:554/live/test",
+		schema:        "rtsp",
+		host:          "127.0.0.1:554",
+		onDemand:      false,
+		probeEnabled:  true,
+		probeInterval: time.Second * 3,
+		healthyCb:     NOOPHealthCheckCallback,
+		mutex:         sync.Mutex{},
+	}
+
+	newUrl := "rtsp://127.0.0.1:554/live/test"
+	err := stream.UpdateURL(newUrl)
+	require.NoError(t, err)
+
+	invalidUrl := "https://example.com:abc"
+	err = stream.UpdateURL(invalidUrl)
 	require.Error(t, err)
 }

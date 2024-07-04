@@ -29,7 +29,7 @@ import (
 	"github.com/volcengine/vei-driver-sdk-go/pkg/contracts"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/interfaces"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/logger"
-	"github.com/volcengine/vei-driver-sdk-go/pkg/stream"
+	"github.com/volcengine/vei-driver-sdk-go/pkg/media"
 	"github.com/volcengine/vei-driver-sdk-go/pkg/utils"
 )
 
@@ -99,7 +99,7 @@ func (a *Agent) Initialize(_ lc.LoggingClient, asyncCh chan<- *sdkmodels.AsyncVa
 	}
 
 	a.log.Info("Initializing media config...")
-	if err := stream.InitializeMediaConfig(a.service.DriverConfigs(), a.service.Name()); err != nil {
+	if err := media.InitializeConfig(a.service.DriverConfigs(), a.service.Name()); err != nil {
 		a.log.Errorf("Initailize media config failed: %v", err)
 		return err
 	}

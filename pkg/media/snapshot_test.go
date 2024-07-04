@@ -14,35 +14,23 @@
  * limitations under the License.
  */
 
-package stream
+package media
 
 import (
-	"net/url"
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
-func (s *Stream) SetOnDemand(onDemand bool) {
-	s.onDemand = onDemand
+func TestNewSnapshotResponse(t *testing.T) {
+	resp := NewSnapshotResponse(nil)
+	require.NotNil(t, resp)
+	require.Contains(t, resp.Result, SnapshotResultHeader)
 }
 
-func (s *Stream) UpdateURL(newUrl string) error {
-	u, err := url.Parse(newUrl)
-	if err != nil {
-		return err
-	}
-
-	oldUrl := s.url
-	s.url = newUrl
-	s.schema = u.Scheme
-	s.host = u.Host
-
-	if oldUrl != newUrl {
-		if err = s.Stop(); err != nil {
-			return err
-		}
-		if err = s.Start(); err != nil {
-			return err
-		}
-	}
-
-	return nil
+func TestStream_Snapshot(t *testing.T) {
+	stream := &Stream{}
+	_, err := stream.Snapshot(context.Background())
+	require.Error(t, err)
 }
