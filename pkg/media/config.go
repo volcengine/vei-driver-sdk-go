@@ -18,6 +18,7 @@ package media
 
 import (
 	"encoding/json"
+	"net/url"
 
 	"github.com/volcengine/vei-driver-sdk-go/pkg/clients"
 )
@@ -25,11 +26,12 @@ import (
 var config *Config
 
 type Config struct {
-	Server string             `json:"MediaServer"`
-	Secret string             `json:"MediaSecret"`
-	VHost  string             `json:"MediaVHost"`
-	App    string             `json:"-"`
-	Client *clients.ZLMClient `json:"-"`
+	Server   string             `json:"MediaServer"`
+	Secret   string             `json:"MediaSecret"`
+	VHost    string             `json:"MediaVHost"`
+	HostName string             `json:"HostName"`
+	App      string             `json:"-"`
+	Client   *clients.ZLMClient `json:"-"`
 }
 
 func InitializeConfig(configs map[string]string, app string) error {
@@ -41,6 +43,14 @@ func InitializeConfig(configs map[string]string, app string) error {
 	config = &Config{}
 	if err = json.Unmarshal(data, config); err != nil {
 		return err
+	}
+
+	_url, err := url.Parse(config.Server)
+	if err != nil {
+		return err
+	}
+	if config.HostName == "" {
+		config.HostName = _url.Hostname()
 	}
 
 	client, err := clients.NewZLMClient(config.Server)
@@ -55,4 +65,28 @@ func InitializeConfig(configs map[string]string, app string) error {
 
 func Media() *Config {
 	return config
+}
+
+func Server() string {
+	return config.Server
+}
+
+func Secret() string {
+	return config.Secret
+}
+
+func VHost() string {
+	return config.VHost
+}
+
+func HostName() string {
+	return config.HostName
+}
+
+func App() string {
+	return config.App
+}
+
+func Client() *clients.ZLMClient {
+	return config.Client
 }

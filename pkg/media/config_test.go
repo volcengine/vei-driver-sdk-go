@@ -23,9 +23,11 @@ import (
 )
 
 const (
-	server = "http://test-media-server"
-	secret = "035c73f7-bb6b-4889-a715-d9eb2d1925cc"
-	vhost  = "__defaultVhost__"
+	hostname = "test-media-server.default"
+	server   = "http://test-media-server.default:80"
+	secret   = "035c73f7-bb6b-4889-a715-d9eb2d1925cc"
+	vhost    = "__defaultVhost__"
+	app      = "mock"
 )
 
 func MockMediaConfig() {
@@ -35,7 +37,7 @@ func MockMediaConfig() {
 			"MediaSecret": secret,
 			"MediaVhost":  vhost,
 		}
-		_ = InitializeConfig(conf, "mock")
+		_ = InitializeConfig(conf, app)
 	}
 }
 
@@ -55,6 +57,7 @@ func TestInitializeMediaConfig(t *testing.T) {
 	}{
 		{name: "nil config", args: args{configs: nil, app: "mock"}, wantErr: false},
 		{name: "empty config", args: args{configs: map[string]string{}, app: "mock"}, wantErr: false},
+		{name: "url parse failed", args: args{configs: map[string]string{"MediaServer": "127.0.0.1:80"}, app: "mock"}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -67,7 +70,11 @@ func TestInitializeMediaConfig(t *testing.T) {
 
 func TestMedia(t *testing.T) {
 	MockMediaConfig()
-	require.Equal(t, server, Media().Server)
-	require.Equal(t, secret, Media().Secret)
-	require.Equal(t, vhost, Media().VHost)
+	require.NotNil(t, Media())
+	require.Equal(t, server, Server())
+	require.Equal(t, secret, Secret())
+	require.Equal(t, vhost, VHost())
+	require.Equal(t, hostname, HostName())
+	require.Equal(t, app, App())
+	require.NotNil(t, Client())
 }
